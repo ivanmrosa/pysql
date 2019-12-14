@@ -1,13 +1,13 @@
-import unittest
+import unittest, os
 from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
 from pysql_command import select, insert
 #from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField
-from models.cidade import Cidade
-from models.estado import Estado
-from models.pais import Pais
-from models.modelo_fipe import ModeloFipe
+from test.models.cidade import Cidade
+from test.models.estado import Estado
+from test.models.pais import Pais
+from test.models.modelo_fipe import ModeloFipe
 from pysql_setup import manage_db
 
 
@@ -157,7 +157,7 @@ class TestOperators(unittest.TestCase):
 class TestExecutionOnDataBase(unittest.TestCase):
     
     def setUp(self):
-        manage_db(clear_cache_param='RECREATEDB', ask_question=False)
+        manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir='/Users/Mac/Documents/dev/PYSQL/test/', models_package='test.models')
         Pais.clear()
         Pais.nome.value = 'Brasil'
         Pais.codigo.value = '0055'
@@ -211,7 +211,11 @@ class TestExecutionOnDataBase(unittest.TestCase):
             oequ(Estado.nome, 'São Paulo'),
             oor(oequ(Estado.nome, 'Minas Gerais') ))        
         estados = sql_obj.values(Estado.nome, Pais.nome)        
-        self.assertEqual(len(estados), 2)
+        
+        for estado in estados:            
+            self.assertIn(estado[0], ('São Paulo', 'Minas Gerais'), )
+            self.assertEqual(estado[1], 'Brasil')
+        
 
     def test_sql_filter_or_2(self):
 
@@ -220,6 +224,13 @@ class TestExecutionOnDataBase(unittest.TestCase):
                 oor(oequ(Estado.nome, 'Minas Gerais'),  oequ(Pais.nome, 'Brasil'))                  
         )        
         estados = sql_obj.values(Estado.nome, Pais.nome)        
+        for estado in estados:            
+            self.assertIn(estado[0], ('California', 'Minas Gerais'))
+            if estado[0] == 'California':
+                self.assertEqual(estado[1], 'Estados Unidos Da América')
+            else:    
+                self.assertEqual(estado[1], 'Brasil')
+
         self.assertEqual(len(estados), 2)   
 
 

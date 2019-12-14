@@ -3,9 +3,9 @@ from importlib import import_module
 from interface import PySqlDatabaseTableInterface
 from pysql_class_generator import PySqlClassGenerator
 
-BASE_DIR = os.getcwd()
-MODEL_DIR = os.path.join(BASE_DIR, 'models')
-MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')
+#BASE_DIR = os.getcwd()
+#MODEL_DIR = os.path.join(BASE_DIR, 'models')
+#MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')
 ''' 
  table_structure 
  {
@@ -18,10 +18,12 @@ MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')
  }
 '''
 
-def get_list_of_tables():
+def get_list_of_tables(models_directory, models_package):           
     list_of_tables = []
-    for (_, name, _) in pkgutil.iter_modules([MODEL_DIR]):
-        imported_module = import_module('.' + name, 'models')
+    iter_modules = pkgutil.iter_modules([models_directory])    
+
+    for (_, name, _) in iter_modules:
+        imported_module = import_module(models_package + '.' + name, None)
 
         classes = list(filter(lambda x: x != 'BaseDbTable' and not x.startswith('__'), 
                         dir(imported_module)))
@@ -37,14 +39,14 @@ def get_list_of_tables():
 
     return list_of_tables
 
-def get_table_saved_structure(class_to_get):
+def get_table_saved_structure(class_to_get, model_backup_directory):
     table_data =  None
     path = ''
     #get using the actual name.     
-    if os.path.exists(os.path.join(MODEL_BACKUP, class_to_get.__name__ + '.json')):
-        path = os.path.join(MODEL_BACKUP, class_to_get.__name__ + '.json') 
-    elif class_to_get.get_old_class_name() and os.path.exists(os.path.join(MODEL_BACKUP, class_to_get.get_old_class_name() + '.json')):
-        path = os.path.exists(os.path.join(MODEL_BACKUP, class_to_get.get_old_class_name() + '.json'))
+    if os.path.exists(os.path.join(model_backup_directory, class_to_get.__name__ + '.json')):
+        path = os.path.join(model_backup_directory, class_to_get.__name__ + '.json') 
+    elif class_to_get.get_old_class_name() and os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json')):
+        path = os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json'))
     
     if path:
         with open(file=path, mode='r') as f:            
@@ -53,10 +55,10 @@ def get_table_saved_structure(class_to_get):
     
     return table_data
 
-def save_table_estructure(class_to_save):
-    if os.path.exists(os.path.join(MODEL_BACKUP, class_to_save.__name__ + '.json')):
-        os.rename(os.path.join(MODEL_BACKUP, class_to_save.__name__ + '.json'), 
-            os.path.join(MODEL_BACKUP, class_to_save.__name__ + '_old.json'))
+def save_table_estructure(class_to_save, model_backup_directory):
+    if os.path.exists(os.path.join(model_backup_directory, class_to_save.__name__ + '.json')):
+        os.rename(os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), 
+            os.path.join(model_backup_directory, class_to_save.__name__ + '_old.json'))
     
     pk_data = class_to_save.get_script_create_pk()
     data = {"table_name": class_to_save.__name__}
@@ -84,20 +86,20 @@ def save_table_estructure(class_to_save):
     for check in checks:
         data["check_constraints"].update({check[0] : check[1]})
     
-    if not os.path.exists(MODEL_BACKUP):
-        os.mkdir(MODEL_BACKUP)
+    if not os.path.exists(model_backup_directory):
+        os.mkdir(model_backup_directory)
 
-    with open(file=os.path.join(MODEL_BACKUP, class_to_save.__name__ + '.json'), mode='w', encoding="utf-8") as f:
+    with open(file=os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), mode='w', encoding="utf-8") as f:
         f.write(json.dumps(data))
 
-def create_tables(list_of_tables):
+def create_tables(list_of_tables, model_backup_directory):
     executor = PySqlClassGenerator.get_script_executor()
     table_data = None
     fields = []
     old_fields = []
     for table in list_of_tables:
         table_data = None
-        table_data = get_table_saved_structure(table)
+        table_data = get_table_saved_structure(table, model_backup_directory)
         
         if not table_data:
             executor.execute_ddl_script(table.get_script_create_table())
@@ -130,7 +132,7 @@ def create_tables(list_of_tables):
     
     for table in list_of_tables:
         table_data = None
-        table_data = get_table_saved_structure(table)
+        table_data = get_table_saved_structure(table, model_backup_directory)
 
         for fk_script in table.get_scripts_fk():
             if not table_data or not fk_script[0] in table_data["foreign_key"]:
@@ -138,22 +140,22 @@ def create_tables(list_of_tables):
     
     executor.commit()
     for table in list_of_tables:
-        save_table_estructure(table)
+        save_table_estructure(table, model_backup_directory)
 
 
 
 
-def create_database():
+def create_database(models_directory, model_backup_directory, package):
     executor = PySqlClassGenerator.get_script_executor()  
     executor.create_database()
     print('database created.')
-    tables = get_list_of_tables()    
-    create_tables(list_of_tables=tables)  
+    tables = get_list_of_tables(models_directory, package)       
+    create_tables(list_of_tables=tables, model_backup_directory=model_backup_directory)  
     print('process concluded.')   
 
-def drop_database(ask_question=True):
+def drop_database(ask_question='y'):
     yes_no = 'y'
-    if ask_question:
+    if ask_question == 'y':
         yes_no = input('Do you really want to drop the database? All data will be lost. If yes, we really recommend a backup. y/n ')
     if yes_no == 'y': 
         executor = PySqlClassGenerator.get_script_executor()  
@@ -161,18 +163,18 @@ def drop_database(ask_question=True):
         executor.drop_database()
         print('database droped.')
 
-def clear_cache(ask):
-    if ask == True:
+def clear_cache(ask, model_backup_directory):
+    if ask == 'y':
         yes_no = input('Do you really want to clear the cache? All scripts will be runned again and errors may occur. If yes, we really recommend a backup. y/n ')
     else:
         yes_no = 'y'
 
     if yes_no == 'y': 
-        if os.path.exists(MODEL_BACKUP):
-            shutil.rmtree(MODEL_BACKUP)
+        if os.path.exists(model_backup_directory):
+            shutil.rmtree(model_backup_directory)
         print('Cache removed.')
 
-def manage_db(clear_cache_param='', ask_question=True):
+def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_package="models"):    
     #check if database is created
       #creates the database if not created
     #check if the cache file exists
@@ -180,13 +182,22 @@ def manage_db(clear_cache_param='', ask_question=True):
       #if not exists, then creates all tables
     
     #fodas vou tentar criar tudo sem verificar nada kkkk
+    if base_dir:
+        BASE_DIR = base_dir
+    else:
+        BASE_DIR = os.getcwd()
+    
+    MODEL_DIR = os.path.join(BASE_DIR, 'models')
+    MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')     
+
+
     if clear_cache_param.upper() == 'CLEARCACHE': 
-        clear_cache(True)
+        clear_cache(True, MODEL_BACKUP)
     elif clear_cache_param == 'RECREATEDB':
-        clear_cache(False)
+        clear_cache(False, MODEL_BACKUP)
         drop_database(ask_question)
 
-    create_database()
+    create_database(MODEL_DIR, MODEL_BACKUP, models_package)
 
 
 

@@ -1,6 +1,6 @@
 from sql_db_tables import BaseDbTable
 from db_types import VarcharField, IntegerPrimaryKey, ForeignKey
-from models.marca_veiculo import MarcaVeiculo
+from test.models.marca_veiculo import MarcaVeiculo
 
 class ModeloVeiculo(BaseDbTable):
     id = IntegerPrimaryKey()

@@ -1,5 +1,5 @@
 from sql_db_tables import BaseDbTable
-from models.marca_fipe import MarcaFipe
+from test.models.marca_fipe import MarcaFipe
 from db_types import VarcharField, IntegerPrimaryKey, ForeignKey, IntegerField
 class ModeloFipe(BaseDbTable):
     id = IntegerPrimaryKey()

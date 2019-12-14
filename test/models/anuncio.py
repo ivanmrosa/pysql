@@ -1,8 +1,8 @@
 from sql_db_tables import BaseDbTable
-from models.fonte_de_anuncio import FonteDeAnuncio
-from models.modelo_veiculo import ModeloVeiculo
-from models.marca_veiculo import MarcaVeiculo
-from models.cidade import Cidade
+from test.models.fonte_de_anuncio import FonteDeAnuncio
+from test.models.modelo_veiculo import ModeloVeiculo
+from test.models.marca_veiculo import MarcaVeiculo
+from test.models.cidade import Cidade
 from db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue
 
 CAMBIO_AUTOMATICO = 'A'

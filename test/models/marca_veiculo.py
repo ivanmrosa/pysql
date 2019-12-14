@@ -1,7 +1,7 @@
 from sql_db_tables import BaseDbTable
 from db_types import VarcharField, IntegerPrimaryKey, ForeignKey
-from models.marca_fipe import MarcaFipe
-from models.fonte_de_anuncio import FonteDeAnuncio
+from test.models.marca_fipe import MarcaFipe
+from test.models.fonte_de_anuncio import FonteDeAnuncio
 
 class MarcaVeiculo(BaseDbTable):
     id = IntegerPrimaryKey()

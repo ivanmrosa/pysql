@@ -1,6 +1,6 @@
 from sql_db_tables import BaseDbTable
 from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField, IntegerPrimaryKey
-from models.pais import Pais
+from test.models.pais import Pais
 
 class Estado(BaseDbTable):
     id = IntegerPrimaryKey()
