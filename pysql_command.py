@@ -12,7 +12,9 @@ def update(table):
     pass
 
 def insert(table):
-    pass
+    insert_object = PySqlClassGenerator.get_command_insert_object()
+    insert_object.table = table
+    return insert_object
 
 def delele(table):
     pass

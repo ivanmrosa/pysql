@@ -1,4 +1,4 @@
-import os, sys, pkgutil, json
+import os, sys, pkgutil, json, inspect, shutil
 from importlib import import_module
 from interface import PySqlDatabaseTableInterface
 from pysql_class_generator import PySqlClassGenerator
@@ -13,7 +13,8 @@ MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')
      "primary_key": {"name": "nome", "fields": ["id"]},
      "index": {"index_1":{"unique": false, "fields": ["field1", "fiels2"] } },
      "foreign_key": {"fk_1":{"reference": "tbl2"} }
-     "fields": [{"name": "na", "type": "VarcharField"}]
+     "fields": [{"name": "na", "type": "VarcharField"}],
+     "check_constraints": {"name_check": "script"}
  }
 '''
 
@@ -24,11 +25,15 @@ def get_list_of_tables():
 
         classes = list(filter(lambda x: x != 'BaseDbTable' and not x.startswith('__'), 
                         dir(imported_module)))
-        for class_name in classes:
-            class_model = getattr(imported_module, class_name)
+        try:
+            for class_name in classes:
+                class_model = getattr(imported_module, class_name)
 
-            if issubclass(class_model, PySqlDatabaseTableInterface) and not class_model in list_of_tables:
-                list_of_tables.append(class_model)
+                if inspect.isclass(class_model) and issubclass(class_model, PySqlDatabaseTableInterface) and not class_model in list_of_tables:
+                    list_of_tables.append(class_model)
+        except Exception as e:
+            print(class_model)
+            raise 
 
     return list_of_tables
 
@@ -74,6 +79,11 @@ def save_table_estructure(class_to_save):
     for field in fields:    
         data["fields"].append({"name": field.get_db_name(), "type": field.get_generic_type_name()})
     
+    checks = class_to_save.get_scripts_check_constraints()
+    data["check_constraints"] = {}
+    for check in checks:
+        data["check_constraints"].update({check[0] : check[1]})
+    
     if not os.path.exists(MODEL_BACKUP):
         os.mkdir(MODEL_BACKUP)
 
@@ -114,6 +124,9 @@ def create_tables(list_of_tables):
             if not table_data or not index_script[0] in table_data["index"]:
                 executor.execute_ddl_script(index_script[1])
         
+        for check_script in table.get_scripts_check_constraints():
+            if not table_data or not check_script[0] in table_data["check_constraints"]:
+                executor.execute_ddl_script(check_script[1])
     
     for table in list_of_tables:
         table_data = None
@@ -133,10 +146,33 @@ def create_tables(list_of_tables):
 def create_database():
     executor = PySqlClassGenerator.get_script_executor()  
     executor.create_database()
+    print('database created.')
     tables = get_list_of_tables()    
-    create_tables(list_of_tables=tables)    
+    create_tables(list_of_tables=tables)  
+    print('process concluded.')   
 
-def manage_db():
+def drop_database(ask_question=True):
+    yes_no = 'y'
+    if ask_question:
+        yes_no = input('Do you really want to drop the database? All data will be lost. If yes, we really recommend a backup. y/n ')
+    if yes_no == 'y': 
+        executor = PySqlClassGenerator.get_script_executor()  
+        executor.close_connection()
+        executor.drop_database()
+        print('database droped.')
+
+def clear_cache(ask):
+    if ask == True:
+        yes_no = input('Do you really want to clear the cache? All scripts will be runned again and errors may occur. If yes, we really recommend a backup. y/n ')
+    else:
+        yes_no = 'y'
+
+    if yes_no == 'y': 
+        if os.path.exists(MODEL_BACKUP):
+            shutil.rmtree(MODEL_BACKUP)
+        print('Cache removed.')
+
+def manage_db(clear_cache_param='', ask_question=True):
     #check if database is created
       #creates the database if not created
     #check if the cache file exists
@@ -144,10 +180,18 @@ def manage_db():
       #if not exists, then creates all tables
     
     #fodas vou tentar criar tudo sem verificar nada kkkk
+    if clear_cache_param.upper() == 'CLEARCACHE': 
+        clear_cache(True)
+    elif clear_cache_param == 'RECREATEDB':
+        clear_cache(False)
+        drop_database(ask_question)
+
     create_database()
-    
+
+
+
 methods_store = {
-  "MANAGEDB": manage_db  
+  "MANAGEDB": manage_db
 }
 
 def run():    

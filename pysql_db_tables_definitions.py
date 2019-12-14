@@ -145,6 +145,20 @@ class GenericDbTable(PySqlDatabaseTableInterface):
                 ' REFERENCES ' + field.get_related_to_class().get_db_name() + 
                 '(' +  related_pk_fields[0].get_db_name() + ')',  field.get_related_to_class().get_db_name()),)
         return fks
+    
+    @classmethod
+    def get_scripts_check_constraints(cls):
+        fields = cls.get_fields()
+        check = None
+        cheks = ()
+        name = ''
+        for field in fields:
+            check = field.get_check_constraint_validation()
+            if check:
+                name = 'CK_' + field.get_owner().get_db_name() + '_' + field.get_db_name() 
+                cheks += ((name, 'ALTER TABLE ' + field.get_owner().get_db_name() + ' ADD CONSTRAINT '+ name +' CHECK (' + check  + ')'), )
+        
+        return cheks
 
     @classmethod
     def get_script_remove_field(cls, db_field_name):        
@@ -173,7 +187,12 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     @classmethod
     def get_old_db_name(cls):
         return None
-
+    
+    @classmethod
+    def clear(cls):
+        fields = cls.get_fields()
+        for field in fields:
+            field.value = None
        
 class PostgreDbTable(GenericDbTable):
     pass

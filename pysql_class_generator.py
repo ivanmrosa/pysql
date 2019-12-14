@@ -33,7 +33,9 @@ class PySqlClassGenerator(object):
         cls.operator_or = config['SQL_OPERATORS_CLASSES']['or']
         
         cls.sql_command_class = config['SQL_COMMAND_CLASSES']['select_script']
+        cls.insert_command_class = config['SQL_COMMAND_CLASSES']['insert_script']
         cls.script_executor = config['SCRIPT_EXECUTOR_CLASS']
+        
     
     
     @classmethod
@@ -55,7 +57,11 @@ class PySqlClassGenerator(object):
     def get_command_sql_object(cls):
         cls.define_initial_data(DB_DRIVER)
         return cls.sql_command_class(cls.get_script_executor())
-
+    
+    @classmethod
+    def get_command_insert_object(cls):
+        cls.define_initial_data(DB_DRIVER)
+        return cls.insert_command_class(cls.get_script_executor())
         
     @classmethod
     def get_script_executor(cls):

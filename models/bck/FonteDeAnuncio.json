@@ -1,0 +1,1 @@
+{"table_name": "FonteDeAnuncio", "primary_key": {"name": "PK_fonte_de_anuncio", "fields": ["id"]}, "index": {"UX_fonte_de_anuncio_nome": {"unique": true, "fields": ["nome"]}}, "foreign_key": {}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "nome", "type": "VarcharField"}, {"name": "url", "type": "VarcharField"}], "check_constraints": {}}

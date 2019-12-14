@@ -2,12 +2,13 @@ import unittest
 from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
-from pysql_command import select
+from pysql_command import select, insert
 #from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField
 from models.cidade import Cidade
 from models.estado import Estado
 from models.pais import Pais
 from models.modelo_fipe import ModeloFipe
+from pysql_setup import manage_db
 
 
 
@@ -27,9 +28,9 @@ class TestDbTables(unittest.TestCase):
     
     def test_get_create_script(self):
         if DB_DRIVER == 'POSTGRESQL':
-            script = 'CREATE TABLE PAIS(ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, CODIGO INTEGER)'
+            script = 'CREATE TABLE PAIS(ID SERIAL NOT NULL, NOME VARCHAR(50) NOT NULL, CODIGO INTEGER)'
             self.assertEqual(Pais.get_script_create_table().upper(), script)
-            script = 'CREATE TABLE ESTADO(ID INTEGER NOT NULL, PAIS_ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, SIGLA VARCHAR(2))'
+            script = 'CREATE TABLE ESTADO(ID SERIAL NOT NULL, PAIS_ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, SIGLA VARCHAR(2))'
             self.assertEqual(Estado.get_script_create_table().upper(), script)
         else:
             raise Exception('Driver ' + DB_DRIVER + ' not implemented')
@@ -125,8 +126,8 @@ class TestOperators(unittest.TestCase):
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
-        'WHERE (CIDADE.NOME = %s) AND (ESTADO.NOME <> %s) '+\
-        'AND (PAIS.CODIGO = %s)'
+        'WHERE ((CIDADE.NOME = %s) AND (ESTADO.NOME <> %s)) '+\
+        'AND ((PAIS.CODIGO = %s))'
         self.assertEqual(sql.upper().replace('%S', '%s'), sql_test)
 
     def test_sql_where_or(self):
@@ -138,11 +139,88 @@ class TestOperators(unittest.TestCase):
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
-        'WHERE (CIDADE.NOME = %s) AND (ESTADO.NOME <> %s) '+\
+        'WHERE ((CIDADE.NOME = %s) AND (ESTADO.NOME <> %s) '+\
         'AND (PAIS.CODIGO = %s) '+\
-        'OR (PAIS.CODIGO = %s)'
+        'OR (PAIS.CODIGO = %s))'
         self.assertEqual(sql.upper().replace('%S', '%s'), sql_test)
 
+    def test_simple_insert(self):
+        self.maxDiff = None
+        Pais.id.value = 1
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        script = insert(Pais).get_script()
+       
+        script_text = 'INSERT INTO PAIS(ID, NOME, CODIGO) VALUES(%s, %s, %s)'
+        self.assertEqual(script.upper().replace('%S', '%s'), script_text)
+    
+class TestExecutionOnDataBase(unittest.TestCase):
+    
+    def setUp(self):
+        manage_db(clear_cache_param='RECREATEDB', ask_question=False)
+        Pais.clear()
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        insert(Pais).run()
+
+        pais_id = select(Pais).values(Pais.id)[0][0]
+        Estado.clear()
+        Estado.nome.value = 'São Paulo'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+
+
+        Estado.clear()
+        Estado.nome.value = 'Minas Gerais'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+
+        Pais.clear()
+        Pais.nome.value = 'Estados Unidos Da América'
+        Pais.codigo.value = '0056'
+        insert(Pais).run()
+
+        pais_id = select(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.id)[0][0]
+        Estado.clear()
+        Estado.nome.value = 'California'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+    
+       
+    def test_simple_sql(self):
+        paises = select(Pais).values()
+        self.assertEqual(paises[0][1], 'Brasil')
+    
+    def test_sql_with_simple_join(self):
+
+        estados = select(Estado).join(Pais).filter(oequ(Estado.nome, 'Minas Gerais')).values(Estado.nome, Pais.nome)
+        self.assertEqual(estados[0][0], 'Minas Gerais')
+        self.assertEqual(estados[0][1], 'Brasil')
+    
+    def test_sql_with_simple_filter(self):
+
+        estados = select(Estado).join(Pais).filter(oequ(Pais.nome, 'Brasil'), 
+            oequ(Estado.nome, 'São Paulo')).values(Estado.nome, Pais.nome)
+        
+        self.assertEqual(estados[0][0], 'São Paulo')
+        self.assertEqual(estados[0][1], 'Brasil')
+    
+    def test_sql_filter_or(self):
+
+        sql_obj = select(Estado).join(Pais).filter(
+            oequ(Estado.nome, 'São Paulo'),
+            oor(oequ(Estado.nome, 'Minas Gerais') ))        
+        estados = sql_obj.values(Estado.nome, Pais.nome)        
+        self.assertEqual(len(estados), 2)
+
+    def test_sql_filter_or_2(self):
+
+        sql_obj = select(Estado).join(Pais).filter(            
+                oequ(Pais.nome, 'Estados Unidos Da América'),
+                oor(oequ(Estado.nome, 'Minas Gerais'),  oequ(Pais.nome, 'Brasil'))                  
+        )        
+        estados = sql_obj.values(Estado.nome, Pais.nome)        
+        self.assertEqual(len(estados), 2)   
 
 
 if __name__ == '__main__':

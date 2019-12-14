@@ -57,10 +57,16 @@ class GenericOor(PySqlOperatorsInterface, GenricBaseOperator):
 
     def get_sql_text(self, value_as_parameter = False, list_of_parameters = []):
         sql = ''
+        count = 0
         for condition in self.list_of_comparations:
-            sql += condition.get_sql_text(value_as_parameter, list_of_parameters) + ' OR '
+            sql += condition.get_sql_text(value_as_parameter, list_of_parameters) + ' AND '
+            count += 1
         
-        sql = sql[:-4] 
+
+        sql = sql[:-5]
+
+        if count > 1:
+            sql = '(' + sql + ')'
 
         return sql
 

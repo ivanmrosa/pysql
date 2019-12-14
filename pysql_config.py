@@ -20,7 +20,7 @@ SQLSERVER = 'SQLSERVER'
 from pysql_db_tables_definitions import PostgreDbTable, OracleDbTable, MySqlDbTable, SqlServerDbTable
 from pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, GenericOnullPostgre, GenericOorPostgre
 from pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
-    GenericBaseDmlSelectSqlServer
+    GenericBaseDmlSelectSqlServer, GenericBaseDmlInsertPostgre
 
 script_executor_class = None
 
@@ -41,7 +41,8 @@ DRIVER_CLASSES_CONFIG = {
            'or': GenericOorPostgre
        },
        'SQL_COMMAND_CLASSES': {
-          'select_script': GenericBaseDmlSelectPostgre
+          'select_script': GenericBaseDmlSelectPostgre,
+          'insert_script': GenericBaseDmlInsertPostgre
        },
        'FIELDS_CONFIG':{
             'IntegerField': {'NAME' : 'INTEGER', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
@@ -52,7 +53,7 @@ DRIVER_CLASSES_CONFIG = {
             'CharacterField' : {'NAME': 'CHAR', 'HAS_SIZE': True, 'HAS_SCALE': False, 'HAS_PRECISION': False},
             'VarcharField': {'NAME': 'VARCHAR', 'HAS_SIZE': True, 'HAS_SCALE': False, 'HAS_PRECISION': False},
             'TextField' : {'NAME': 'TEXT', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
-            'IntegerPrimaryKey' : {'NAME' : 'INTEGER', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False}     
-       }
+            'IntegerPrimaryKey' : {'NAME' : 'SERIAL', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False}     
+       }       
    }
 }

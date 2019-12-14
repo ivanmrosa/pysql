@@ -39,7 +39,10 @@ class PySqlRunScriptInterface(ABC):
     def execute_select_script(self, sql, params):
         pass
 
-    def create_database(self):
+    def create_database(self):        
+        pass
+    
+    def drop_database(self):
         pass
     
     def commit(self):

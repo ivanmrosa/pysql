@@ -4,16 +4,19 @@ from interface import PySqlDatabaseTableInterface
 import inspect
 #from db_script_executor import ScriptExecutor
 
-
-class GenricBaseDmlScripts(object):
+class DmlBase(object):
     def __init__(self, script_executor_object):
+        self.script_executor = script_executor_object        
+
+class GenricBaseDmlScripts(DmlBase):
+    def __init__(self, script_executor_object):
+        super(GenricBaseDmlScripts, self).__init__(script_executor_object)
         self.list_operations = []
         self.list_params = []
         self.script_fields = ''
         self.script_from = ''
         self.script_where = ''
-        self.script_executor = script_executor_object
-
+        
     
     def add_operation(self, type, table):
         self.list_operations.append({"type": type, "table" : table})
@@ -81,7 +84,7 @@ class GenricBaseDmlScripts(object):
                 else:
                     temporary_script += operator.get_sql_text(value_as_parameter=True, list_of_parameters=self.list_params)
                     
-        self.script_where += temporary_script
+        self.script_where += '(' + temporary_script + ')'
 
         return self
 
@@ -111,17 +114,55 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
         else:
             str_fields = '*'
         
-        self.script_fields += ' ' + str_fields + ' '
+        #self.script_fields += ' ' + str_fields + ' '
         
-        script = self.script_fields + self.script_from.strip() + self.script_where
+        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where
         return script.strip()
     
     def values(self, *fields):
         sql = self.get_sql(*fields)
-        return self.script_executor.execute_sql_script(sql=sql, params=tuple(self.list_params))
+        return self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
 
 
+class GenericBaseDmlInsert(DmlBase):
 
+    def __init__(self, script_executor_object):
+       super(GenericBaseDmlInsert, self).__init__(script_executor_object)        
+       self.table = None 
+       self.params = ()
+    
+    def commit(self):
+        if self.script_executor:
+            self.script_executor.commit()
+            self.script_executor.close_connector()
+
+    def run(self, commit=True):
+        
+        #if issubclass(table_or_select_object, PySqlDatabaseTableInterface):
+        #if not self.table:
+        #    raise Exception('Table must be informed to insert.')
+        self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+
+    def get_script(self, fields_insert_from_select=()):
+        if issubclass(self.table, PySqlDatabaseTableInterface):            
+            self.params = ()        
+            script_fields = 'INSERT INTO ' + self.table.get_db_name() + '('
+            script_values = 'VALUES('
+            fields = self.table.get_fields() 
+            for field in fields:
+                if field.value != None:
+                    self.params += (field.value, )
+                    script_fields += field.get_db_name() + ', '
+                    script_values += '%s, '
+
+            script_fields = script_fields[:-2] + ') '
+            script_values = script_values[:-2] + ')'
+            return  script_fields + script_values
+        else:
+            return ''
+
+
+#sql
 class GenericBaseDmlSelectPostgre(GenricBaseDmlSelect):
     pass
 
@@ -132,5 +173,19 @@ class GenericBaseDmlSelectMySql(GenricBaseDmlSelect):
 class GenericBaseDmlSelectOracle(GenricBaseDmlSelect):
     pass
 
-class GenericBaseDmlSelectSqlServer(GenricBaseDmlSelect):
+class GenericBaseDmlSelectSqlServer(GenericBaseDmlInsert):
+    pass
+
+#insert
+class GenericBaseDmlInsertPostgre(GenericBaseDmlInsert):
+    pass
+
+class GenericBaseDmlInsertMySql(GenericBaseDmlInsert):
+    pass
+
+
+class GenericBaseDmlInsertOracle(GenericBaseDmlInsert):
+    pass
+
+class GenericBaseDmlInsertSqlServer(GenericBaseDmlInsert):
     pass

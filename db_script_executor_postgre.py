@@ -4,7 +4,7 @@ from interface import PySqlRunScriptInterface
 #if DB_DRIVER == POSTGRESQL:
 import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
-from psycopg2.errors import DuplicateDatabase
+from psycopg2.errors import DuplicateDatabase 
 
 
 class PostgreScriptExecutor(PySqlRunScriptInterface):
@@ -33,6 +33,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
             self.connector = None
     
     def execute_ddl_script(self, script, auto_commit=False):
+        print(script)
         self.open_connection()
         self.cursor.execute(script)
         
@@ -60,24 +61,32 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
         if self.connector:
             self.connector.commit()
             self.close_connection()
-
-    def create_database(self):     
-        original_database = self.__databasename
+    
+    def run_ddl_isolated(self, script, databasename):
+        self.close_connection()
+        original_database = self.__databasename        
+        self.__databasename = databasename    
         try:
-            try:
-                self.__databasename = 'postgres'
-                self.open_connection()           
-                self.connector.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-                self.execute_ddl_script('create database {database};'.format(database=original_database))
-                self.close_connection()
-            except Exception as identifier:
-                
-                if type(identifier) == DuplicateDatabase:
-                    pass
-                else:
-                    raise            
-        finally:
+            self.open_connection()           
+            self.connector.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            self.execute_ddl_script(script)
+            self.close_connection()
+        finally:            
             self.__databasename = original_database
+            self.close_connection()
+
+
+    def create_database(self):  
+        try:
+            self.run_ddl_isolated('create database {database};'.format(database=self.__databasename), 'postgres')   
+        except Exception as identifier:                
+            if type(identifier) == DuplicateDatabase:
+                pass
+            else:
+                raise            
+                
+    def drop_database(self):
+        self.run_ddl_isolated('drop database if exists {database};'.format(database=self.__databasename), 'postgres')   
 
     def __del__(self):
         self.close_connection()

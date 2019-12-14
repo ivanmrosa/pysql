@@ -10,33 +10,35 @@ class Field(PySqlFieldInterface):
     __is_db_field = True
     __owner = None
     def __init__(self, db_name, nullable = True, index = False, primary_key = False, \
-        unique = False, size=0, scale = 0, precision=0, default=None):
+        unique = False, size=0, scale = 0, precision=0, default=None, permitted_values=()):
         
-        self.__index = index
-        self.__db_name = db_name
-        self.__primary_key = primary_key
-        self.__unique = unique
-        self.__value = None
-        self.__scale = scale
-        self.__precision = precision
-        self.__size = size
-        self.__nullable = nullable
-        self.__default = default
+        self._index = index
+        self._db_name = db_name
+        self._primary_key = primary_key
+        self._unique = unique
+        self._value = None
+        self._scale = scale
+        self._precision = precision
+        self._size = size
+        self._nullable = nullable
+        self._default = default
+        self._permitted_values = permitted_values
+        self._value_is_string = False
     
     def get_db_name(self):
-        return self.__db_name
+        return self._db_name
     
     def get_generic_type_name(self):
         return type(self).__name__
     
     def is_primary_key(self):
-        return self.__primary_key
+        return self._primary_key
 
     def has_unique_index(self):
-        return self.__unique
+        return self._unique
 
     def has_normal_index(self):
-        return self.__index
+        return self._index
 
     def is_foreign_key(self):
         return False
@@ -46,18 +48,43 @@ class Field(PySqlFieldInterface):
         
     def __set_name__(self, owner, name):
         self.__owner = owner
+    
+    def get_prepared_default_value(self):
+        return self.get_prepared_value_to_script(self._default)
+    
+    def get_prepared_value_to_script(self, value):
+        
+        if inspect.isclass(value) and issubclass(value, NullValue):
+            return 'Null'        
+        elif self._value_is_string:
+            return '\'' + value + '\''
+        else:
+            return value
+
+    def get_check_constraint_validation(self):
+        script = ''
+        if len(self._permitted_values) > 0:
+            for value in self._permitted_values:
+                script += self.get_db_name() + ' = ' +  self.get_prepared_value_to_script(value) + ' OR '
+                        
+            return script[:-4]
+        else:
+            return None 
 
     def get_field_type_and_configureted(self):
         config = DRIVER_CLASSES_CONFIG[DB_DRIVER]
         field_config = config['FIELDS_CONFIG'][self.get_generic_type_name()]
         script = field_config['NAME']
         if field_config['HAS_SIZE']:
-            script += '(' + str(self.__size) + ')'
+            script += '(' + str(self._size) + ')'
         elif field_config['HAS_PRECISION'] or field_config['HAS_SCALE']:
-            script += '(' + self.__precision + ', ' + self.__scale + ')'
+            script += '(' + str(self._precision) + ', ' + str(self._scale) + ')'
         
-        if not self.__nullable or self.__primary_key:
+        if not self._nullable or self._primary_key:
             script += ' NOT NULL'
+        
+        if self._default != None:
+            script += ' DFAULT ' + self.get_prepared_default_value()
         
         return script
 
@@ -67,11 +94,12 @@ class Field(PySqlFieldInterface):
     
     @property
     def value(self):
-        return self.__value
+        return self._value
     
     @value.setter
     def value(self, val):
-        self.__value = val
+        self._value = val
+
 
 
 class ForeignKey(Field):
@@ -102,23 +130,40 @@ class ForeignKey(Field):
         if len(pk_fields) > 1 or len(pk_fields) == 0:
             raise Exception('Impossible to create a foreign key for ' + self.get_db_name() + 
             ' to relate with ' + related_table_name)
+                        
         
-            
-        script = self.get_db_name() + ' ' + pk_fields[0].get_field_type_and_configureted()
+        self._scale = pk_fields[0]._scale
+        self._precision = pk_fields[0]._precision
+        self._size = pk_fields[0]._size
+        self._permitted_values = pk_fields[0]._permitted_values                    
+        script = self.get_db_name() + ' ' + self.get_field_type_and_configureted()
         
         return script
+
+    def get_generic_type_name(self):
+        field_type = type(self.__related_to_class.get_pk_fields()[0])
+
+        if issubclass(field_type, IntegerPrimaryKey):
+            return IntegerField.__name__
+        else:
+            return field_type.__name__
+            
 
     def is_foreign_key(self):
         return True
         
         
 class IntegerField(Field):
+    def __init__(self, db_name, nullable = True, index = False, primary_key = False, \
+        unique = False, size=0, scale = 0, precision=0, default=None, permitted_values=()):
+        super(IntegerField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
+        nullable=nullable, default=default, permitted_values=permitted_values)   
+
+
+class SmallIntField(IntegerField):
     pass
 
-class SmallIntField(Field):
-    pass
-
-class BigIntField(Field):
+class BigIntField(IntegerField):
     pass
 
 class NumericField(Field):
@@ -128,14 +173,15 @@ class MoneyField(Field):
     pass
 
 class CharacterField(Field):
-    def __init__(self, db_name, size, index = False, primary_key = False, unique = False, nullable = True):
+    def __init__(self, db_name, size, index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
         super(CharacterField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
-            size = size, nullable=nullable)        
-
+            size = size, nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)   
+        self._value_is_string = True     
+    
 class VarcharField(CharacterField):
     pass
 
-class TextField(Field):
+class TextField(CharacterField):
     pass
 
 class IntegerPrimaryKey(IntegerField):

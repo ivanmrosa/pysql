@@ -1,1 +1,0 @@
-{"table_name": "Pais", "primary_key": {"name": "PK_Pais", "fields": ["id"]}, "index": {"UX_Pais_nome": {"unique": true, "fields": ["nome"]}, "IX_Pais_codigo": {"unique": false, "fields": ["codigo"]}}, "foreign_key": {}, "fields": [{"name": "id", "type": "IntegerField"}, {"name": "nome", "type": "VarcharField"}, {"name": "codigo", "type": "IntegerField"}]}
