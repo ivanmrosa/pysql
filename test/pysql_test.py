@@ -19,7 +19,8 @@ class TestDbTables(unittest.TestCase):
     def test_get_table_alias_changing_alias(self):
         Pais2 = Pais.get_copy('Pais2')
         self.assertEqual(Pais2.get_alias().upper(), 'PAIS2')
-        self.test_get_table_alias_default()
+        self.assertEqual(Pais.get_alias().upper(), 'PAIS')
+        #self.test_get_table_alias_default()
     
     def test_get_db_name(self):
         Pais3 = Pais.get_copy('PAIS3')
@@ -195,6 +196,11 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Estado.pais.value = pais_id
         insert(Estado).run()
 
+
+        Pais.clear()
+        Pais.nome.value = 'Argentina'
+        #Pais.codigo.value = '0056'
+        insert(Pais).run()
     
        
     def test_simple_sql(self):
@@ -282,8 +288,38 @@ class TestExecutionOnDataBase(unittest.TestCase):
             self.assertIn(estado[0], ('Texas', 'California', 'Carolina do Norte'))
     
     def test_sql_filter_like(self):
-        pass
+        sql_obj = select(Estado).filter(
+            olike(Estado.nome, 'Ca%')
+        )
+        
+        estados = sql_obj.values(Estado.nome)     
+        self.assertGreater(len(estados), 0);   
+        for estado in estados:            
+            self.assertIn(estado[0], ('California', 'Carolina do Norte'))        
+    
+    def test_sql_filter_not_like(self):
+        sql_obj = select(Estado).filter(
+            onlike(Estado.nome, 'Ca%')
+        )
+        
+        estados = sql_obj.values(Estado.nome)  
+        self.assertGreater(len(estados), 0);         
+        for estado in estados:            
+            self.assertNotIn(estado[0], ('California', 'Carolina do Norte'))        
 
+    def test_sql_filter_is_null(self):
+        paises = select(Pais).filter(onull(Pais.codigo)).values(Pais.nome)
+        self.assertGreater(len(paises), 0);   
+        for pais in paises:
+            self.assertEqual(pais[0], 'Argentina')
+
+    def test_sql_filter_is_not_null(self):
+        data = select(Pais).filter(onnull(Pais.codigo))
+        print(data.get_sql())
+        paises = data.values(Pais.nome)
+        self.assertGreater(len(paises), 0);   
+        for pais in paises:
+            self.assertIsNot(pais[0], 'Argentina')
 
 if __name__ == '__main__':
     unittest.main()
