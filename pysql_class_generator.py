@@ -36,7 +36,9 @@ class PySqlClassGenerator(object):
         cls.operator_not_in = config['SQL_OPERATORS_CLASSES']['not_in']
         cls.operator_like = config['SQL_OPERATORS_CLASSES']['like']
         cls.operator_not_like = config['SQL_OPERATORS_CLASSES']['not_like']
-        
+        cls.operator_less_than = config['SQL_OPERATORS_CLASSES']['less_than']
+        cls.operator_bigger_than = config['SQL_OPERATORS_CLASSES']['bigger_than']
+
         cls.sql_command_class = config['SQL_COMMAND_CLASSES']['select_script']
         cls.insert_command_class = config['SQL_COMMAND_CLASSES']['insert_script']
         cls.script_executor = config['SCRIPT_EXECUTOR_CLASS']
@@ -60,7 +62,9 @@ class PySqlClassGenerator(object):
             'in': cls.operator_in,
             'not_in': cls.operator_not_in,
             'like': cls.operator_like,
-            'not_like': cls.operator_not_like
+            'not_like': cls.operator_not_like,
+            'less_than': cls.operator_less_than,
+            'bigger_than': cls.operator_bigger_than
         }
     
     @classmethod

@@ -20,7 +20,7 @@ SQLSERVER = 'SQLSERVER'
 from pysql_db_tables_definitions import PostgreDbTable, OracleDbTable, MySqlDbTable, SqlServerDbTable
 
 from pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, GenericOnullPostgre, GenericOorPostgre, GenericOinPostgre, \
-    GenericOninPostgre, GenericOlikePostgre, GenericOnlikePostgre, GenericOnnullPostgre
+    GenericOninPostgre, GenericOlikePostgre, GenericOnlikePostgre, GenericOnnullPostgre, GenericObtPostgre, GenericOltPostgre
 
 from pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
     GenericBaseDmlSelectSqlServer, GenericBaseDmlInsertPostgre
@@ -46,7 +46,9 @@ DRIVER_CLASSES_CONFIG = {
            'in': GenericOinPostgre,
            'not_in': GenericOninPostgre,
            'like': GenericOlikePostgre,
-           'not_like': GenericOnlikePostgre           
+           'not_like': GenericOnlikePostgre,
+           'less_than': GenericOltPostgre,
+           'bigger_than': GenericObtPostgre        
        },
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectPostgre,

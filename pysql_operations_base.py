@@ -133,6 +133,15 @@ class GenericOnlike(GenricOequ):
     def get_operator(self):
         return 'NOT LIKE'
 
+
+class GenericObt(GenricOequ):
+    def get_operator(self):
+        return '>'
+
+class GenericOlt(GenricOequ):
+    def get_operator(self):
+        return '<'
+
 # postgresql
 
 
@@ -169,6 +178,11 @@ class GenericOlikePostgre(GenericOlike):
 class GenericOnlikePostgre(GenericOnlike):
     pass
 
+class GenericOltPostgre(GenericOlt):
+    pass
+
+class GenericObtPostgre(GenericObt):
+    pass
 
 # mysql
 class GenricOequMySql(GenricOequ):
@@ -203,6 +217,13 @@ class GenericOlikeMysql(GenericOlike):
 
 class GenericOnlikeMysql(GenericOnlike):
     pass
+
+class GenericOltMysql(GenericOlt):
+    pass
+
+class GenericObtMysql(GenericObt):
+    pass
+
 
 
 # oracle
@@ -239,6 +260,11 @@ class GenericOlikeOracle(GenericOlike):
 class GenericOnlikeOracle(GenericOnlike):
     pass
 
+class GenericOltOracle(GenericOlt):
+    pass
+
+class GenericObtOracle(GenericObt):
+    pass
 
 # sqlserver
 
@@ -277,4 +303,10 @@ class GenericOlikeSqlServer(GenericOlike):
 
 
 class GenericOnlikeSqlServer(GenericOnlike):
+    pass
+
+class GenericOltSqlServer(GenericOlt):
+    pass
+
+class GenericObtSqlServer(GenericObt):
     pass

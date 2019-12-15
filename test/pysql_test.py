@@ -199,7 +199,6 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
         Pais.clear()
         Pais.nome.value = 'Argentina'
-        #Pais.codigo.value = '0056'
         insert(Pais).run()
     
        
@@ -315,11 +314,23 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
     def test_sql_filter_is_not_null(self):
         data = select(Pais).filter(onnull(Pais.codigo))
-        print(data.get_sql())
         paises = data.values(Pais.nome)
         self.assertGreater(len(paises), 0);   
         for pais in paises:
             self.assertIsNot(pais[0], 'Argentina')
+    
+    def test_sql_filter_bigger_than(self):
+        paises = select(Pais).filter(obt(Pais.codigo, '0055')).values(Pais.nome)
+        self.assertGreater(len(paises), 0);   
+        for pais in paises:
+            self.assertIn(pais[0], 'Estados Unidos Da América', 'Argentina')
+
+    def test_sql_filter_less_than(self):
+        paises = select(Pais).filter(olt(Pais.codigo, '0056')).values(Pais.nome)
+        self.assertGreater(len(paises), 0);   
+        for pais in paises:
+            self.assertEqual(pais[0], 'Brasil')
+
 
 if __name__ == '__main__':
     unittest.main()
