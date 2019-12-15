@@ -6,6 +6,10 @@ import inspect
 class NullValue(object):
     pass
 
+class CurrentDate(object):
+    pass
+
+
 class Field(PySqlFieldInterface):
     __is_db_field = True
     __owner = None
@@ -53,10 +57,13 @@ class Field(PySqlFieldInterface):
         return self.get_prepared_value_to_script(self._default)
     
     def get_prepared_value_to_script(self, value):
+        if inspect.isclass(value):
+            if issubclass(value, NullValue):
+                return 'Null'
+            elif issubclass(value, CurrentDate):
+                return DRIVER_CLASSES_CONFIG[DB_DRIVER]['CURRENT_DATE_TYPE']
         
-        if inspect.isclass(value) and issubclass(value, NullValue):
-            return 'Null'        
-        elif self._value_is_string:
+        if self._value_is_string:
             return '\'' + value + '\''
         else:
             return value
@@ -84,7 +91,7 @@ class Field(PySqlFieldInterface):
             script += ' NOT NULL'
         
         if self._default != None:
-            script += ' DFAULT ' + self.get_prepared_default_value()
+            script += ' DEFAULT ' + self.get_prepared_default_value()
         
         return script
 
@@ -189,3 +196,11 @@ class IntegerPrimaryKey(IntegerField):
         super().__init__(db_name=db_name, nullable=False, index=False, primary_key=True)
 
 
+class DateField(Field):
+    def __init__(self, db_name, index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
+        super(DateField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
+            size=0 , nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)   
+    
+
+class DateTimeField(DateField):
+    pass

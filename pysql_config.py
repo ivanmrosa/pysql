@@ -63,7 +63,11 @@ DRIVER_CLASSES_CONFIG = {
             'CharacterField' : {'NAME': 'CHAR', 'HAS_SIZE': True, 'HAS_SCALE': False, 'HAS_PRECISION': False},
             'VarcharField': {'NAME': 'VARCHAR', 'HAS_SIZE': True, 'HAS_SCALE': False, 'HAS_PRECISION': False},
             'TextField' : {'NAME': 'TEXT', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
-            'IntegerPrimaryKey' : {'NAME' : 'SERIAL', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False}     
-       }       
+            'IntegerPrimaryKey' : {'NAME' : 'SERIAL', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
+            'DateField' : {'NAME' : 'DATE', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},     
+            'DateTimeField' : {'NAME' : 'DATE', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},     
+       },
+
+       'CURRENT_DATE_TYPE': 'CURRENT_DATE'       
    }
 }
