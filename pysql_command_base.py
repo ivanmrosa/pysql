@@ -1,10 +1,10 @@
 from field_tools import FieldTools
 #from sql_db_tables import BaseDbTable 
-from interface import PySqlDatabaseTableInterface
+from interface import PySqlDatabaseTableInterface, PySqlCommandInterface
 import inspect
 #from db_script_executor import ScriptExecutor
 
-class DmlBase(object):
+class DmlBase(PySqlCommandInterface):    
     def __init__(self, script_executor_object):
         self.script_executor = script_executor_object        
 
@@ -90,11 +90,22 @@ class GenricBaseDmlScripts(DmlBase):
 
 
 class GenricBaseDmlSelect(GenricBaseDmlScripts):
+    def __init__(self, script_executor_object):
+        super(GenricBaseDmlSelect, self).__init__(script_executor_object)
+        self.fields_to_select = None
+
+    def set_fields(self, *fields):
+        self.fields_to_select = fields
+        return self
+        
     def get_sql(self, *fields):
         str_fields = ''
-        
+
         if fields:
-            for field in fields:
+            self.fields_to_select = fields
+        
+        if self.fields_to_select:
+            for field in self.fields_to_select:
                 #tuple means field with alias (Table.field, 'field_alias')
                 is_class = inspect.isclass(field)
                 is_db_table = False

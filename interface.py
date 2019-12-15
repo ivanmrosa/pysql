@@ -48,7 +48,8 @@ class PySqlRunScriptInterface(ABC):
     def commit(self):
         pass
     
-    
+class PySqlCommandInterface(ABC):
+    pass
     
     
 #Bolab.join(Dbol, (Bolab.cod_bol,  Dbol.cod_bol)).\

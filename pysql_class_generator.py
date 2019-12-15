@@ -31,6 +31,8 @@ class PySqlClassGenerator(object):
         cls.operator_equal = config['SQL_OPERATORS_CLASSES']['equal']
         cls.operator_is_null = config['SQL_OPERATORS_CLASSES']['isNull']
         cls.operator_or = config['SQL_OPERATORS_CLASSES']['or']
+        cls.operator_in = config['SQL_OPERATORS_CLASSES']['in']
+        cls.operator_not_in = config['SQL_OPERATORS_CLASSES']['not_in']
         
         cls.sql_command_class = config['SQL_COMMAND_CLASSES']['select_script']
         cls.insert_command_class = config['SQL_COMMAND_CLASSES']['insert_script']
@@ -50,7 +52,9 @@ class PySqlClassGenerator(object):
             'different': cls.operator_different,
             'equal': cls.operator_equal,
             'is_null': cls.operator_is_null,
-            'or': cls.operator_or
+            'or': cls.operator_or,
+            'in': cls.operator_in,
+            'not_in': cls.operator_not_in
         }
     
     @classmethod

@@ -1,4 +1,4 @@
-from interface import PySqlOperatorsInterface
+from interface import PySqlOperatorsInterface, PySqlCommandInterface
 from field_tools import FieldTools
 import inspect
 
@@ -70,6 +70,47 @@ class GenericOor(PySqlOperatorsInterface, GenricBaseOperator):
 
         return sql
 
+class GenericOin(PySqlOperatorsInterface, GenricBaseOperator):
+    def __init__(self, *list_of_comparations):
+        #self.list_of_comparations = list_of_comparations
+        if len(list_of_comparations) < 2:
+            Exception('oin operator must have unless two parameters. The first one must be the field and the others, values to filter.')
+        
+        self.field_to_filter = list_of_comparations[0]
+        self.params_to_filter = list_of_comparations[1:]
+
+
+    def get_operator(self):
+        return 'IN'
+    
+
+    def get_sql_text(self, value_as_parameter = False, list_of_parameters = []):        
+        is_a_command_class = False
+        
+        sql = '{table}.{field} {operator} ('.format(table=self.field_to_filter.get_owner().get_alias(), 
+            field=self.field_to_filter.get_db_name(), operator=self.get_operator())
+                
+                
+        for param in self.params_to_filter:
+            
+            if param and inspect.isclass(type(param)):
+                is_a_command_class = issubclass(type(param), PySqlCommandInterface)
+
+            if param and not is_a_command_class:            
+                sql += self.get_value_or_field_name(value_or_field= param, quoted=False, value_as_parameter=True, list_of_parameters=list_of_parameters) + ', '
+            elif param and is_a_command_class:
+                sql += param.get_sql() + '  '
+                list_of_parameters +=  param.list_params
+    
+        sql = sql[:-2] + ')'
+
+
+        return sql
+
+class GenericOnin(GenericOin):
+
+    def get_operator(self):
+        return 'NOT IN'
 
 
 #postgresql
@@ -83,6 +124,12 @@ class GenericOnullPostgre(GenericOnull):
    pass
 
 class GenericOorPostgre(GenericOor):
+   pass
+
+class GenericOinPostgre(GenericOin):
+   pass
+
+class GenericOninPostgre(GenericOnin):
    pass
 
 
@@ -99,6 +146,11 @@ class GenericOnullMySql(GenericOnull):
 class GenericOorMySql(GenericOor):
    pass
 
+class GenericOinMysql(GenericOin):
+   pass
+
+class GenericOninMysql(GenericOnin):
+   pass
 
 
 #oracle
@@ -114,6 +166,11 @@ class GenericOnullOracle(GenericOnull):
 class GenericOorOracle(GenericOor):
    pass
 
+class GenericOinOracle(GenericOin):
+   pass
+
+class GenericOninOracle(GenericOnin):
+   pass
 
 #sqlserver
 
@@ -130,4 +187,11 @@ class GenericOnullSqlServer(GenericOnull):
    pass
 
 class GenericOorSqlServer(GenericOor):
+   pass
+
+
+class GenericOinSqlServer(GenericOin):
+   pass
+
+class GenericOninSqlServer(GenericOnin):
    pass

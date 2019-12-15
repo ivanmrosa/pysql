@@ -2,11 +2,11 @@ from pysql_class_generator import PySqlClassGenerator
 
 
 def select(table):
-   sql = PySqlClassGenerator.get_command_sql_object()
-   sql.add_operation('SELECT', table)
-   sql.script_fields = 'SELECT'
-   sql.script_from = ' FROM {table} {alias}'.format(table=table.get_db_name(), alias=table.get_alias())
-   return sql
+   sql_command = PySqlClassGenerator.get_command_sql_object()
+   sql_command.add_operation('SELECT', table)
+   sql_command.script_fields = 'SELECT'
+   sql_command.script_from = ' FROM {table} {alias}'.format(table=table.get_db_name(), alias=table.get_alias())
+   return sql_command
 
 def update(table):
     pass

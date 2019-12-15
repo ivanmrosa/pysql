@@ -12,7 +12,6 @@ from pysql_setup import manage_db
 
 
 
-
 class TestDbTables(unittest.TestCase):
     def test_get_table_alias_default(self):
        self.assertEqual(Pais.get_alias().upper(), 'PAIS')
@@ -185,6 +184,17 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Estado.nome.value = 'California'
         Estado.pais.value = pais_id
         insert(Estado).run()
+
+        Estado.clear()
+        Estado.nome.value = 'Carolina do Norte'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+
+        Estado.clear()
+        Estado.nome.value = 'Texas'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+
     
        
     def test_simple_sql(self):
@@ -221,6 +231,8 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
         sql_obj = select(Estado).join(Pais).filter(            
                 oequ(Pais.nome, 'Estados Unidos Da América'),
+                odif(Estado.nome, 'Carolina do Norte'),
+                odif(Estado.nome, 'Texas'),
                 oor(oequ(Estado.nome, 'Minas Gerais'),  oequ(Pais.nome, 'Brasil'))                  
         )        
         estados = sql_obj.values(Estado.nome, Pais.nome)        
@@ -230,8 +242,47 @@ class TestExecutionOnDataBase(unittest.TestCase):
                 self.assertEqual(estado[1], 'Estados Unidos Da América')
             else:    
                 self.assertEqual(estado[1], 'Brasil')
+    
+    def test_sql_filter_in_clause(self):
+        sql_obj = select(Estado).filter(
+            oin(Estado.nome, 'California', 'Minas Gerais')
+        )
+        estados = sql_obj.values(Estado.nome)        
+        for estado in estados:            
+            self.assertIn(estado[0], ('California', 'Minas Gerais'))
+        
+    def test_sql_filter_in_clause_2(self):
+        sql_obj = select(Estado).join(Pais).filter(
+            oin(Estado.nome, 'California', 'Minas Gerais'),
+            oequ(Pais.nome, 'Brasil')
+        )
 
-        self.assertEqual(len(estados), 2)   
+        estados = sql_obj.values(Estado.nome, Pais.nome)        
+        for estado in estados:            
+            self.assertIn(estado[0], ('Minas Gerais'))
+    
+    def test_sql_filter_in_clause_sub_sql(self):
+        filter_pais_in = select(Pais).filter(oequ(Pais.nome, 'Brasil')).set_fields(Pais.id)
+        sql_obj = select(Estado).filter(
+            oin(Estado.pais, filter_pais_in)
+        )
+        
+        estados = sql_obj.values(Estado.nome)        
+        for estado in estados:            
+            self.assertIn(estado[0], ('Minas Gerais', 'São Paulo'))
+
+    def test_sql_filter_not_in_clause_sub_sql(self):
+        filter_pais_in = select(Pais).filter(oequ(Pais.nome, 'Brasil')).set_fields(Pais.id)
+        sql_obj = select(Estado).filter(
+            onin(Estado.pais, filter_pais_in)
+        )
+        
+        estados = sql_obj.values(Estado.nome)        
+        for estado in estados:            
+            self.assertIn(estado[0], ('Texas', 'California', 'Carolina do Norte'))
+    
+    def test_sql_filter_like(self):
+        pass
 
 
 if __name__ == '__main__':
