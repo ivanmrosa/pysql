@@ -215,8 +215,7 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
         else:
             return ''
 
-class GenericBaseDmlUpdate(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
-
+class GenericBaseDmlUpdateDelete(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
     def add_base_join(self, table):
         if self.script_from:
             self.script_from += ', {table} {alias} '.format(table=table.get_db_name(), alias=table.get_alias())
@@ -231,6 +230,23 @@ class GenericBaseDmlUpdate(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
                 self.script_where += script
         else:
             self.script_where += ' WHERE ' + script
+   
+    def run(self, commit=True):   
+        script = self.get_script()     
+        self.params += tuple(self.list_params)
+        self.script_executor.execute_dml_script(script, self.params, commit)    
+
+
+class GenericBaseDmlUpdate(GenericBaseDmlUpdateDelete):
+
+    def get_script(self):
+        script = ''
+        if issubclass(self.table, PySqlDatabaseTableInterface): 
+            script = 'UPDATE {table} {sql_set} {sql_from} {sql_where}'.format(table=self.table.get_db_name(), sql_set=self.get_sql_set(),
+               sql_from=self.script_from, sql_where=self.script_where)       
+            return script
+        else:
+            Exception('The update parameters must be a PySqlDataBaseTAbleInterface')
     
     def get_filled_fields(self):
         fields = self.table.get_fields()
@@ -255,19 +271,23 @@ class GenericBaseDmlUpdate(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
         
         return sql_field[:-2]
             
+
+
+class GenericBaseDmDelete(GenericBaseDmlUpdateDelete):
+        
     def get_script(self):
         script = ''
         if issubclass(self.table, PySqlDatabaseTableInterface): 
-            script = 'UPDATE {table} {sql_set} {sql_from} {sql_where}'.format(table=self.table.get_db_name(), sql_set=self.get_sql_set(),
-               sql_from=self.script_from, sql_where=self.script_where)       
+            if self.script_from:
+                script = 'DELETE FROM {table} WHERE EXISTS ( SELECT ''1'' {sql_from} {sql_where} )'.format(table=self.table.get_db_name(), 
+                sql_from=self.script_from, sql_where=self.script_where)       
+            else:
+                script = 'DELETE FROM {table} {sql_from} {sql_where}'.format(table=self.table.get_db_name(), sql_from=self.script_from, 
+                sql_where=self.script_where)       
             return script
         else:
-            Exception('The update parameters must be an PySqlDataBaseTAbleInterface')
-    
-    def run(self, commit=True):   
-        script = self.get_script()     
-        self.params += tuple(self.list_params)
-        self.script_executor.execute_dml_script(script, self.params, commit)    
+            Exception('The update parameters must be a PySqlDataBaseTAbleInterface')
+
 
 #sql
 class GenericBaseDmlSelectPostgre(GenricBaseDmlSelect):
@@ -286,7 +306,6 @@ class GenericBaseDmlSelectSqlServer(GenricBaseDmlSelect):
 class GenericBaseDmlSelectSqlite(GenricBaseDmlSelect):
     def get_param_representation(self):
         return '?'
-
 
 
 #insert
@@ -401,3 +420,20 @@ class GenericBaseDmlUpdateSqlite(GenericBaseDmlUpdate):
             
         else:
             self.script_executor.execute_dml_script(script, self.params, commit)    
+
+
+#delete GenericBaseDmDelete
+class GenericBaseDmlDeletePostgre(GenericBaseDmDelete):
+    pass
+
+class GenericBaseDmlDeleteMySql(GenericBaseDmDelete):
+    pass
+
+class GenericBaseDmlDeleteOracle(GenericBaseDmDelete):
+    pass
+
+class GenericBaseDmlDeleteSqlServer(GenericBaseDmDelete):
+    pass
+
+class GenericBaseDmlDeleteSqlite(GenericBaseDmDelete):
+    pass

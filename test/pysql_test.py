@@ -2,7 +2,7 @@ import unittest, os
 from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
-from pysql_command import select, insert, update
+from pysql_command import select, insert, update, delete
 #from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField
 from test.models.cidade import Cidade
 from test.models.estado import Estado
@@ -379,6 +379,20 @@ class TestExecutionOnDataBase(unittest.TestCase):
         estados = select(Estado).join(Pais).filter(oequ(Estado.nome, 'Minas Gerais')).values((Estado.nome, 'estado_nome'), (Pais.nome, 'pais_nome'))
         self.assertEqual(estados[0]['estado_nome'], 'Minas Gerais')
         self.assertEqual(estados[0]['pais_nome'], 'Brasil')
+    
+    def test_simple_delete(self):
+        filtro = ( oequ(Pais.nome, 'Argentina'), )
+        self.assertEqual(len(select(Pais).filter(*filtro).values(Pais.nome)), 1)
+        delete(Pais).filter(*filtro).run()
+        self.assertEqual(len(select(Pais).filter(*filtro).values(Pais.nome)), 0)
+        self.assertEqual(len(select(Pais).filter(oequ(Pais.nome, 'Brasil')).values(Pais.nome)), 1)
+
+    def test_delete_with_from(self):
+        filtro = ( oequ(Pais.nome, 'Brasil'), )
+        self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 2)
+        delete(Estado).join(Pais).filter(*filtro).run()
+        self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
+        self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)
 
 if __name__ == '__main__':
     unittest.main()

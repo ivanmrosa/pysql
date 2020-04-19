@@ -28,7 +28,8 @@ from pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, Generi
 
 from pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
     GenericBaseDmlSelectSqlServer,  GenericBaseDmlSelectSqlite,  GenericBaseDmlInsertPostgre, GenericBaseDmlUpdatePostgre, GenericBaseDmlUpdateMySql, \
-    GenericBaseDmlUpdateOracle, GenericBaseDmlUpdateSqlServer, GenericBaseDmlInsertSqlite, GenericBaseDmlUpdateSqlite
+    GenericBaseDmlUpdateOracle, GenericBaseDmlUpdateSqlServer, GenericBaseDmlInsertSqlite, GenericBaseDmlUpdateSqlite, GenericBaseDmlDeletePostgre, GenericBaseDmlDeleteMySql, \
+    GenericBaseDmlDeleteOracle, GenericBaseDmlDeleteSqlServer, GenericBaseDmlDeleteSqlite
 
 script_executor_class = None
 
@@ -62,7 +63,8 @@ DRIVER_CLASSES_CONFIG = {
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectPostgre,
           'insert_script': GenericBaseDmlInsertPostgre,
-          'update_script': GenericBaseDmlUpdatePostgre
+          'update_script': GenericBaseDmlUpdatePostgre,
+          'delete_script': GenericBaseDmlDeletePostgre
        },
        'FIELDS_CONFIG':{
             'IntegerField': {'NAME' : 'INTEGER', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
@@ -102,7 +104,8 @@ DRIVER_CLASSES_CONFIG = {
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectSqlite,
           'insert_script': GenericBaseDmlInsertSqlite,
-          'update_script': GenericBaseDmlUpdateSqlite
+          'update_script': GenericBaseDmlUpdateSqlite,
+          'delete_script': GenericBaseDmlDeleteSqlite
        },
        'FIELDS_CONFIG':{
             'IntegerField': {'NAME' : 'INTEGER', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},

@@ -19,6 +19,9 @@ def insert(table):
     insert_object.table = table
     return insert_object
 
-def delele(table):
-    pass
+def delete(table):
+    delete_object = PySqlClassGenerator.get_command_delete_object()
+    delete_object.add_operation('DELETE', table)
+    delete_object.table = table
+    return delete_object
 
