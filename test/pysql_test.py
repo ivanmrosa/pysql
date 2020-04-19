@@ -8,6 +8,7 @@ from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
+from test.models.modelo_veiculo import ModeloVeiculo
 from pysql_setup import manage_db
 
 
@@ -373,6 +374,11 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
         for estado in estados:            
             self.assertEqual(estado[0], 'BR')
+    
+    def test_friendly_data_dict(self):
+        estados = select(Estado).join(Pais).filter(oequ(Estado.nome, 'Minas Gerais')).values((Estado.nome, 'estado_nome'), (Pais.nome, 'pais_nome'))
+        self.assertEqual(estados[0]['estado_nome'], 'Minas Gerais')
+        self.assertEqual(estados[0]['pais_nome'], 'Brasil')
 
 if __name__ == '__main__':
     unittest.main()

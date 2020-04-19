@@ -2,6 +2,7 @@ from field_tools import FieldTools
 #from sql_db_tables import BaseDbTable 
 from interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface
 import inspect
+from friendly_data import FriendlyData
 #from pysql_command import update
 #from sql_operators import oequ
 
@@ -112,7 +113,9 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
         self.fields_to_select = fields
         return self
         
-    def get_sql(self, *fields):
+    
+    def get_fields_names_and_script(self, *fields):
+        fields_names = []        
         str_fields = ''
 
         if fields:
@@ -126,27 +129,48 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                 if is_class:
                     is_db_table = issubclass(field, PySqlDatabaseTableInterface)
                 if issubclass(type(field), tuple) :
+                    fields_names.append(field[1])
                     str_fields += '{table_alias}.{field_name} {field_alias}, '. \
                         format(table_alias=field[0].get_owner().get_alias(),
-                            field_name=field[0].get_db_name(), field_alias=field[1])                    
-                elif is_db_table:
-                    str_fields += '{table_name}.*, '.format(table_name=field.get_db_name())
+                            field_name=field[0].get_db_name(), field_alias=field[1])
+                elif is_db_table:                                        
+                    str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
+                    for f in field.get_owner().get_fields():
+                        fields_names.append(f.get_db_db_name())
                 else:                    
+                    fields_names.append(field.get_db_name())
                     str_fields += '{alias}.{field_name}, '.format(alias=field.get_owner().get_alias(), \
                         field_name=field.get_db_name())
 
             str_fields = str_fields[:-2]
-        else:
-            str_fields = '*'
-        
-        #self.script_fields += ' ' + str_fields + ' '
-        
+        else:            
+            for operation in self.list_operations:                
+                table = operation["table"]
+                table_name = table.get_alias()
+                for f in table.get_fields():
+                    str_fields += '{table_name}.{field_name}, '.format(table_name=table_name, field_name=f.get_db_name())
+                    fields_names.append(f.get_db_name())
+            
+            str_fields = str_fields[:-2]
+                
+
+        return fields_names , str_fields    
+
+    def get_sql_and_fields_names(self, *fields):                
+        fields_names, str_fields = self.get_fields_names_and_script(*fields)
         script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where
-        return script.strip()
+        return script.strip(), fields_names
+    
+    def get_sql(self, *fields):
+        sql, fields_names = self.get_sql_and_fields_names(*fields)
+        return sql
     
     def values(self, *fields):
-        sql = self.get_sql(*fields)
-        return self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
+        sql, fields_names = self.get_sql_and_fields_names(*fields)
+        
+        simple_data = self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
+        friendly_data = FriendlyData(simple_data,  fields_names)
+        return friendly_data
 
 
 class GenericBaseDmlInsertUpdate(DmlBase):
