@@ -38,9 +38,12 @@ class PySqlClassGenerator(object):
         cls.operator_not_like = config['SQL_OPERATORS_CLASSES']['not_like']
         cls.operator_less_than = config['SQL_OPERATORS_CLASSES']['less_than']
         cls.operator_bigger_than = config['SQL_OPERATORS_CLASSES']['bigger_than']
+        cls.operator_exists = config['SQL_OPERATORS_CLASSES']['exists']
+        cls.operator_not_exists = config['SQL_OPERATORS_CLASSES']['not_exists']
 
         cls.sql_command_class = config['SQL_COMMAND_CLASSES']['select_script']
         cls.insert_command_class = config['SQL_COMMAND_CLASSES']['insert_script']
+        cls.update_command_class = config['SQL_COMMAND_CLASSES']['update_script']
         cls.script_executor = config['SCRIPT_EXECUTOR_CLASS']
         
     
@@ -64,7 +67,9 @@ class PySqlClassGenerator(object):
             'like': cls.operator_like,
             'not_like': cls.operator_not_like,
             'less_than': cls.operator_less_than,
-            'bigger_than': cls.operator_bigger_than
+            'bigger_than': cls.operator_bigger_than,
+            'exists': cls.operator_exists,
+            'not_exists': cls.operator_not_exists
         }
     
     @classmethod
@@ -76,6 +81,11 @@ class PySqlClassGenerator(object):
     def get_command_insert_object(cls):
         cls.define_initial_data(DB_DRIVER)
         return cls.insert_command_class(cls.get_script_executor())
+    
+    @classmethod
+    def get_command_update_object(cls):
+        cls.define_initial_data(DB_DRIVER)
+        return cls.update_command_class(cls.get_script_executor())
         
     @classmethod
     def get_script_executor(cls):

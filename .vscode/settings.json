@@ -8,5 +8,13 @@
     ],
     "python.testing.pytestEnabled": false,
     "python.testing.nosetestsEnabled": false,
-    "python.testing.unittestEnabled": true
+    "python.testing.unittestEnabled": true,
+    "sqltools.connections": [
+        {
+            "database": "${workspaceFolder}/teste.db",
+            "dialect": "SQLite",
+            "name": "testeorm"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
 }

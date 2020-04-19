@@ -44,6 +44,15 @@ class GenericDbTable(PySqlDatabaseTableInterface):
             if not(attr.startswith('__') and attr.endswith('__')) and getattr(item, '_Field__is_db_field', False):
                 fields.append(item)
         return fields
+    
+    @classmethod    
+    def get_field_by_db_name(cls, name):
+        fields = cls.get_fields()
+        for field in fields:
+            if field.get_db_name() == name:
+                return field
+        
+        return None
 
     @classmethod
     def get_script_create_table(cls):
@@ -58,7 +67,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return script_create
     
     @classmethod
-    def get_script_create_pk(cls):
+    def get_script_create_pk(cls, creating_table=False):
         fields = cls.get_pk_fields()
         name = ""
         if len(fields) > 0:
@@ -85,7 +94,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return cls.__pk_fields
 
     @classmethod
-    def get_scripts_indices(cls):
+    def get_scripts_indices(cls, creating_table=False):
         fields = cls.get_fields()
         name = ''        
         indices = ()
@@ -128,7 +137,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return fks
 
     @classmethod
-    def get_scripts_fk(cls):
+    def get_scripts_fk(cls, creating_table=False):
         fields = cls.get_fk_fields()        
         fks = ()
         name = ""
@@ -147,7 +156,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return fks
     
     @classmethod
-    def get_scripts_check_constraints(cls):
+    def get_scripts_check_constraints(cls, creating_table=False):
         fields = cls.get_fields()
         check = None
         cheks = ()
@@ -205,3 +214,106 @@ class OracleDbTable(GenericDbTable):
 
 class SqlServerDbTable(GenericDbTable):
     pass
+
+class SqliteDbTable(GenericDbTable):
+    @classmethod
+    def get_script_create_table(cls):
+        script_create = 'CREATE TABLE ' + cls.get_db_name() + '('
+        fields = cls.get_fields()
+        
+        for field in fields:
+            script_create += field.get_script() + ', '
+
+        script_create += cls.get_script_create_pk(creating_table=True)[1] + ', '
+        
+        for fk in cls.get_scripts_fk(creating_table=True):
+            script_create += fk[1] + ', '
+         
+        for ck in cls.get_scripts_check_constraints(creating_table=True):
+            script_create += ck[1] + ', '
+
+        script_create = script_create[:-2]
+        script_create += ')'
+        return script_create
+
+    @classmethod
+    def get_script_create_pk(cls, creating_table=False):
+        if creating_table:
+            fields = cls.get_pk_fields()
+            name = ""
+            if len(fields) > 0:
+                name = 'PK_' + cls.get_db_name()
+                script = ' PRIMARY KEY('
+                
+                for field in fields:
+                    script += field.get_db_name() + ', '
+            
+                script = script[:-2] + ')'
+                return (name, script, fields)
+            else:
+                return ('', '', '')
+        else:
+            return ('', '', '')
+
+    @classmethod
+    def get_scripts_indices(cls, creating_table=False) :
+        fields = cls.get_fields()
+        name = ''        
+        indices = ()
+        for field in fields:
+            if field.has_unique_index():
+                name = 'UX_' + cls.get_db_name() + '_' + field.get_db_name()
+                indices += ((name, 'CREATE UNIQUE INDEX ' + name + \
+                    ' ON ' + cls.get_db_name() + '('+ field.get_db_name() + ')', (field.get_db_name(), ), True ), )
+            elif field.has_normal_index():
+                name = 'IX_' + cls.get_db_name() + '_' + field.get_db_name()
+                indices += ((name, 'CREATE INDEX ' + name + \
+                    ' ON ' + cls.get_db_name() + '('+ field.get_db_name() + ')', (field.get_db_name(), ), False ), )     
+        return indices          
+
+    @classmethod
+    def get_scripts_fk(cls, creating_table=False):
+        if creating_table:
+            fields = cls.get_fk_fields()        
+            fks = ()
+            name = ""
+            for field in fields:
+                related_pk_fields = field.get_related_to_class().get_pk_fields()
+                if len(related_pk_fields) == 0:
+                    raise Exception(field.get_related_to_class().get_db_name() + ' has not a primary key.')
+                elif len(related_pk_fields) > 1:
+                    raise Exception(field.get_related_to_class().get_db_name() + ' has a composite primary key')
+                name = 'FK_' + cls.get_db_name()[0:3] + \
+                    '_' + field.get_related_to_class().get_db_name()[0:3] + '_' + field.get_db_name() 
+                fks += ((name,  ' FOREIGN KEY(' +  field.get_db_name() + ')' + 
+                    ' REFERENCES ' + field.get_related_to_class().get_db_name() + 
+                    '(' +  related_pk_fields[0].get_db_name() + ')',  field.get_related_to_class().get_db_name()),)
+            return fks
+        else:
+            return ()
+    
+    @classmethod
+    def get_scripts_check_constraints(cls, creating_table = False):
+        if creating_table:
+            fields = cls.get_fields()
+            check = None
+            cheks = ()
+            name = ''
+            for field in fields:
+                check = field.get_check_constraint_validation()
+                if check:
+                    name = 'CK_' + field.get_owner().get_db_name() + '_' + field.get_db_name() 
+                    cheks += ((name, ' CHECK (' + check  + ')'), )
+            
+            return cheks
+        else:
+            return ()
+
+    @classmethod
+    def get_script_remove_field(cls, db_field_name):        
+            return 'ALTER TABLE ' + cls.get_db_name() + ' DROP COLUMN ' + db_field_name
+    
+    @classmethod
+    def get_script_add_field(cls, field_class):
+        if field_class in cls.get_fields():
+            return 'ALTER TABLE ' + cls.get_db_name() + ' ADD COLUMN ' + field_class.get_script()

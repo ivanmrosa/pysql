@@ -9,7 +9,10 @@ def select(table):
    return sql_command
 
 def update(table):
-    pass
+    update_object = PySqlClassGenerator.get_command_update_object()
+    update_object.add_operation('UPDATE', table)
+    update_object.table = table
+    return update_object
 
 def insert(table):
     insert_object = PySqlClassGenerator.get_command_insert_object()

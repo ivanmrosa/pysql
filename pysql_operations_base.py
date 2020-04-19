@@ -142,6 +142,29 @@ class GenericOlt(GenricOequ):
     def get_operator(self):
         return '<'
 
+class GenericOex(PySqlOperatorsInterface, GenricBaseOperator):
+
+    def __init__(self, filter_for_exists_sql):
+        self.filter_for_exists_sql = filter_for_exists_sql
+    
+    def get_operator(self):
+        return 'EXISTS'
+    
+    def get_sql_text(self, value_as_parameter=False, list_of_parameters=[]):
+        if not (self.filter_for_exists_sql and \
+           inspect.isclass(type(self.filter_for_exists_sql)) and \
+           issubclass(type(self.filter_for_exists_sql), PySqlCommandInterface)):
+             Exception('Exists operator expects a PySqlCommandInterface subclass.')
+        
+        list_of_parameters += self.filter_for_exists_sql.list_params
+        
+        return ' {operator} ({sql_from_exists_parameter})'.format(operator=self.get_operator(), 
+            sql_from_exists_parameter=self.filter_for_exists_sql.get_sql())
+
+class GenericOnex(GenericOex):
+    def get_operator(self):
+        return 'NOT EXISTS'
+
 # postgresql
 
 
@@ -184,6 +207,13 @@ class GenericOltPostgre(GenericOlt):
 class GenericObtPostgre(GenericObt):
     pass
 
+class GenericOexPostgre(GenericOex):
+    pass
+
+class GenericOnexPostgre(GenericOnex):
+    pass
+
+
 # mysql
 class GenricOequMySql(GenricOequ):
     pass
@@ -224,6 +254,11 @@ class GenericOltMysql(GenericOlt):
 class GenericObtMysql(GenericObt):
     pass
 
+class GenericOexMySql(GenericOex):
+    pass
+
+class GenericOnexMysql(GenericOnex):
+    pass
 
 
 # oracle
@@ -266,17 +301,24 @@ class GenericOltOracle(GenericOlt):
 class GenericObtOracle(GenericObt):
     pass
 
+class GenericOexOracle(GenericOex):
+    pass
+
+class GenericOnexOracle(GenericOnex):
+    pass
+
+
 # sqlserver
 
-class GenricBaseOperatorSqlServer(GenricBaseOperator):
+class GenericBaseOperatorSqlServer(GenricBaseOperator):
     pass
 
 
-class GenricOequSqlServer(GenricOequ):
+class GenericOequSqlServer(GenricOequ):
     pass
 
 
-class GenricOdifSqlServer(GenricOdif):
+class GenericOdifSqlServer(GenricOdif):
     pass
 
 
@@ -309,4 +351,63 @@ class GenericOltSqlServer(GenericOlt):
     pass
 
 class GenericObtSqlServer(GenericObt):
+    pass
+
+class GenericOexSqlServer(GenericOex):
+    pass
+
+class GenericOnexSqlServer(GenericOnex):
+    pass
+
+
+# sqlite
+
+        
+class GenricBaseOperatorSqlite(GenricBaseOperator):
+    def get_formated_parameter(self, list_of_parameters):
+        return '?'
+
+class GenericOequSqlite(GenricBaseOperatorSqlite, GenricOequ):
+    pass
+
+      
+class GenericOdifSqlite(GenricBaseOperatorSqlite, GenricOdif):
+    pass
+
+
+class GenericOnullSqlite(GenricBaseOperatorSqlite, GenericOnull):
+    pass
+
+class GenericOnnullSqlite(GenricBaseOperatorSqlite, GenericOnnull):
+    pass
+
+class GenericOorSqlite(GenricBaseOperatorSqlite, GenericOor):
+    pass
+
+
+class GenericOinSqlite(GenricBaseOperatorSqlite, GenericOin):
+    pass
+
+
+class GenericOninSqlite(GenricBaseOperatorSqlite, GenericOnin):
+    pass
+
+
+class GenericOlikeSqlite(GenricBaseOperatorSqlite, GenericOlike):
+    pass
+
+
+class GenericOnlikeSqlite(GenricBaseOperatorSqlite, GenericOnlike):
+    pass
+
+class GenericOltSqlite(GenricBaseOperatorSqlite, GenericOlt):
+    pass
+
+class GenericObtSqlite(GenricBaseOperatorSqlite, GenericObt):
+    pass
+
+class GenericOexSqlite(GenricBaseOperatorSqlite, GenericOex):
+    pass
+
+class GenericOnexSqlite(GenricBaseOperatorSqlite, GenericOnex):
     pass

@@ -2,7 +2,7 @@ import unittest, os
 from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
-from pysql_command import select, insert
+from pysql_command import select, insert, update
 #from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField
 from test.models.cidade import Cidade
 from test.models.estado import Estado
@@ -33,14 +33,16 @@ class TestDbTables(unittest.TestCase):
             script = 'CREATE TABLE ESTADO(ID SERIAL NOT NULL, PAIS_ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, SIGLA VARCHAR(2))'
             self.assertEqual(Estado.get_script_create_table().upper(), script)
         else:
-            raise Exception('Driver ' + DB_DRIVER + ' not implemented')
+            pass
+            #raise Exception('Driver ' + DB_DRIVER + ' not implemented')
     
     def test_get_create_pk(self):
         if DB_DRIVER == 'POSTGRESQL':
             script = 'ALTER TABLE PAIS ADD CONSTRAINT PK_PAIS PRIMARY KEY(ID)'
             self.assertEqual(Pais.get_script_create_pk()[1].upper(), script)
         else:
-            raise Exception('Driver ' + DB_DRIVER + ' not implemented')
+            #raise Exception('Driver ' + DB_DRIVER + ' not implemented')
+            pass
     
     def test_get_create_index(self):
         if DB_DRIVER == 'POSTGRESQL':            
@@ -48,7 +50,8 @@ class TestDbTables(unittest.TestCase):
             self.assertEqual(Pais.get_scripts_indices()[1][1].upper(), 'CREATE INDEX IX_PAIS_CODIGO ON PAIS(CODIGO)')
             self.assertEqual(ModeloFipe.get_scripts_indices()[1][1].upper(), 'CREATE INDEX IX_MODELO_FIPE_MARCA_NOME ON MODELO_FIPE(MARCA_FIPE_ID,NOME)') 
         else:
-            raise Exception('Driver ' + DB_DRIVER + ' not implemented')
+            #raise Exception('Driver ' + DB_DRIVER + ' not implemented')
+            pass
     
     def test_get_create_foreign_keys(self):
         if DB_DRIVER == 'POSTGRESQL':            
@@ -63,8 +66,9 @@ class TestFields(unittest.TestCase):
     def test_get_field_owner(self):
         self.assertEqual(Pais.id.get_owner().get_db_name(), 'Pais')
 
-
+@unittest.skipIf(DB_DRIVER != 'POSTGRES', 'NOT POSTGRE') 
 class TestOperators(unittest.TestCase):
+    
     def test_sql_simple_select(self):        
         sql = select(Estado).get_sql()
         self.assertEqual(sql.upper(), 'SELECT * FROM ESTADO ESTADO')
@@ -157,7 +161,8 @@ class TestOperators(unittest.TestCase):
 class TestExecutionOnDataBase(unittest.TestCase):
     
     def setUp(self):
-        manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir='/Users/Mac/Documents/dev/PYSQL/test/', models_package='test.models')
+        base = os.path.join(os.getcwd(), 'test/') 
+        manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
         Pais.clear()
         Pais.nome.value = 'Brasil'
         Pais.codigo.value = '0055'
@@ -292,7 +297,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
         )
         
         estados = sql_obj.values(Estado.nome)     
-        self.assertGreater(len(estados), 0);   
+        self.assertGreater(len(estados), 0)   
         for estado in estados:            
             self.assertIn(estado[0], ('California', 'Carolina do Norte'))        
     
@@ -302,35 +307,72 @@ class TestExecutionOnDataBase(unittest.TestCase):
         )
         
         estados = sql_obj.values(Estado.nome)  
-        self.assertGreater(len(estados), 0);         
+        self.assertGreater(len(estados), 0)         
         for estado in estados:            
             self.assertNotIn(estado[0], ('California', 'Carolina do Norte'))        
 
     def test_sql_filter_is_null(self):
         paises = select(Pais).filter(onull(Pais.codigo)).values(Pais.nome)
-        self.assertGreater(len(paises), 0);   
+        self.assertGreater(len(paises), 0)   
         for pais in paises:
             self.assertEqual(pais[0], 'Argentina')
 
     def test_sql_filter_is_not_null(self):
         data = select(Pais).filter(onnull(Pais.codigo))
         paises = data.values(Pais.nome)
-        self.assertGreater(len(paises), 0);   
+        self.assertGreater(len(paises), 0)   
         for pais in paises:
             self.assertIsNot(pais[0], 'Argentina')
     
     def test_sql_filter_bigger_than(self):
         paises = select(Pais).filter(obt(Pais.codigo, '0055')).values(Pais.nome)
-        self.assertGreater(len(paises), 0);   
+        self.assertGreater(len(paises), 0)   
         for pais in paises:
             self.assertIn(pais[0], 'Estados Unidos Da América', 'Argentina')
 
     def test_sql_filter_less_than(self):
         paises = select(Pais).filter(olt(Pais.codigo, '0056')).values(Pais.nome)
-        self.assertGreater(len(paises), 0);   
+        self.assertGreater(len(paises), 0)   
         for pais in paises:
             self.assertEqual(pais[0], 'Brasil')
+    
+    def test_sql_filter_exists(self):
+        pais_filter = select(Pais).filter(oequ(Pais.codigo, '0055'), oequ(Estado.pais, Pais.id))                 
+        estados = select(Estado).filter(oex(pais_filter)).values(Estado.nome)
+        self.assertGreater(len(estados), 0)   
+         
+        for estado in estados:            
+            self.assertIn(estado[0], ('Minas Gerais', 'São Paulo'))
 
+    def test_sql_filter_not_exists(self):
+        pais_filter = select(Pais).filter(oequ(Pais.codigo, '0055'), oequ(Estado.pais, Pais.id))
+        estados = select(Estado).filter(onex(pais_filter)).values(Estado.nome)
+        self.assertGreater(len(estados), 0)   
+
+        for estado in estados:            
+            self.assertNotIn(estado[0], ('Minas Gerais', 'São Paulo'))
+    
+    def test_simple_update(self):
+        filtro_estado = (oequ(Estado.nome, 'Minas Gerais'),)
+        Estado.clear()
+        Estado.sigla.value = 'MG'
+        update(Estado).filter(*filtro_estado).run()
+        estados = select(Estado).filter(*filtro_estado).values(Estado.sigla)
+        self.assertGreater(len(estados), 0)   
+
+        for estado in estados:            
+            self.assertEqual(estado[0], 'MG')
+        
+    def test_from_update(self):
+        filtro_estado = (oequ(Pais.nome, 'Brasil'),)
+        Estado.clear()
+        Estado.sigla.value = 'BR'
+        update(Estado).join(Pais).filter(*filtro_estado).run()
+        estados = select(Estado).join(Pais).filter(*filtro_estado).values(Estado.sigla)
+        self.assertGreater(len(estados), 0)   
+
+        for estado in estados:            
+            self.assertEqual(estado[0], 'BR')
 
 if __name__ == '__main__':
     unittest.main()

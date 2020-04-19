@@ -1,12 +1,17 @@
 from field_tools import FieldTools
 #from sql_db_tables import BaseDbTable 
-from interface import PySqlDatabaseTableInterface, PySqlCommandInterface
+from interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface
 import inspect
-#from db_script_executor import ScriptExecutor
+#from pysql_command import update
+#from sql_operators import oequ
+
 
 class DmlBase(PySqlCommandInterface):    
     def __init__(self, script_executor_object):
         self.script_executor = script_executor_object        
+
+    def get_param_representation(self):
+        return '%s'
 
 class GenricBaseDmlScripts(DmlBase):
     def __init__(self, script_executor_object):
@@ -16,51 +21,60 @@ class GenricBaseDmlScripts(DmlBase):
         self.script_fields = ''
         self.script_from = ''
         self.script_where = ''
-        
-    
+                
     def add_operation(self, type, table):
         self.list_operations.append({"type": type, "table" : table})
-    
-    def join(self, table, tuple_fields_comparations = ()):
+        
+    def add_base_join(self, table):
         self.script_from += ' JOIN {table} {alias} ON '.format(table=table.get_db_name(), alias=table.get_alias())
+    
+    def add_script_used_for_join_filter(self, script, first_filter):
+        self.script_from += script
+
+    def add_base_filter_join_using_fk(self, table, table_related, field, field_related, first_filter):
+        sql_join_filter = ''
+        if first_filter:
+            temp_script = '{alias_prior}.{field_name_prior} = {alias}.{field_name} '
+        else:
+            temp_script = 'AND {alias_prior}.{field_name_prior} = {alias}.{field_name} '
+        
+        sql_join_filter += temp_script.format(alias_prior=table_related.get_alias(), 
+            field_name_prior=field_related.get_db_name(),
+            alias=table.get_alias(), field_name=field.get_db_name())
+        
+        self.add_script_used_for_join_filter(sql_join_filter, first_filter)
+        
+    def end_operation_add_join(self, table):
+        self.script_from = self.script_from.strip()
+        self.add_operation('JOIN', table)
+
+    
+    def join(self, table, table_to_relate=None, tuple_fields_comparations = ()):        
+        self.add_base_join(table)
         if len(tuple_fields_comparations) == 0:
-            if len(self.list_operations) > 0:
-                prior_table = self.list_operations[-1:][0]["table"]
+            if len(self.list_operations) > 0:                
+                prior_table = table_to_relate if table_to_relate else self.list_operations[-1:][0]["table"]
                 fk_fields = table.get_fk_fields()
+
                 count = 0
-                temp_script = ''
                 for fk_field in fk_fields:
                     if issubclass(fk_field.get_related_to_class(), prior_table):
-                        if count == 0:
-                             temp_script = '{alias_prior}.{field_name_prior} = {alias}.{field_name} '
-                        else:
-                            temp_script = 'AND {alias_prior}.{field_name_prior} = {alias}.{field_name} '
-                        
-                        self.script_from += temp_script.format(alias_prior=prior_table.get_alias(), 
-                            field_name_prior=fk_field.get_related_to_class().get_pk_fields()[0].get_db_name(),
-                            alias=table.get_alias(), field_name=fk_field.get_db_name())
+                        self.add_base_filter_join_using_fk(table, prior_table, fk_field, 
+                            fk_field.get_related_to_class().get_pk_fields()[0], count==0)
                         count += 1
                 
                 if count == 0:
                     fk_fields = prior_table.get_fk_fields()
-                    count = 0
                     for fk_field in fk_fields:
                         if issubclass(fk_field.get_related_to_class(), table):
-                            if count == 0:
-                                temp_script = '{alias_prior}.{field_name_prior} = {alias}.{field_name} '
-                            else:
-                                temp_script = 'AND {alias_prior}.{field_name_prior} = {alias}.{field_name} '
-
-                            self.script_from += temp_script. \
-                                format(alias_prior=prior_table.get_alias(), 
-                                    field_name_prior=fk_field.get_db_name(),
-                                    alias=table.get_alias(), field_name=table.get_pk_fields()[0].get_db_name())
-                            count += 1
-        
+                            self.add_base_filter_join_using_fk(table, prior_table, 
+                                fk_field.get_related_to_class().get_pk_fields()[0], fk_field, count==0)
+                            count += 1        
             else:
                 raise Exception('Join must be preceded for an operator update or select')
-        self.script_from = self.script_from.strip()
-        self.add_operation('JOIN', table)
+        
+        self.end_operation_add_join(table)
+
         return self
     
     def filter(self, *operators):
@@ -135,13 +149,12 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
         return self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
 
 
-class GenericBaseDmlInsert(DmlBase):
-
+class GenericBaseDmlInsertUpdate(DmlBase):
     def __init__(self, script_executor_object):
-       super(GenericBaseDmlInsert, self).__init__(script_executor_object)        
-       self.table = None 
-       self.params = ()
-    
+        super(GenericBaseDmlInsertUpdate, self).__init__(script_executor_object)        
+        self.table = None 
+        self.params = ()
+
     def commit(self):
         if self.script_executor:
             self.script_executor.commit()
@@ -153,8 +166,14 @@ class GenericBaseDmlInsert(DmlBase):
         #if not self.table:
         #    raise Exception('Table must be informed to insert.')
         self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+    
+    def get_script(self):
+        return ''
 
-    def get_script(self, fields_insert_from_select=()):
+class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
+    
+
+    def get_script(self):
         if issubclass(self.table, PySqlDatabaseTableInterface):            
             self.params = ()        
             script_fields = 'INSERT INTO ' + self.table.get_db_name() + '('
@@ -164,7 +183,7 @@ class GenericBaseDmlInsert(DmlBase):
                 if field.value != None:
                     self.params += (field.value, )
                     script_fields += field.get_db_name() + ', '
-                    script_values += '%s, '
+                    script_values += '{param}, '.format(param=self.get_param_representation())
 
             script_fields = script_fields[:-2] + ') '
             script_values = script_values[:-2] + ')'
@@ -172,6 +191,59 @@ class GenericBaseDmlInsert(DmlBase):
         else:
             return ''
 
+class GenericBaseDmlUpdate(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
+
+    def add_base_join(self, table):
+        if self.script_from:
+            self.script_from += ', {table} {alias} '.format(table=table.get_db_name(), alias=table.get_alias())
+        else:
+            self.script_from += ' FROM {table} {alias} '.format(table=table.get_db_name(), alias=table.get_alias())
+    
+    def add_script_used_for_join_filter(self, script, first_filter):
+        if self.script_where:
+            if first_filter:
+                self.script_where += ' AND ' + script
+            else:
+                self.script_where += script
+        else:
+            self.script_where += ' WHERE ' + script
+    
+    def get_filled_fields(self):
+        fields = self.table.get_fields()
+        filled_fields = []
+        for field in fields:
+            if field.value != None:
+                filled_fields.append(field)
+        return filled_fields
+
+    def get_sql_set(self):
+        sql_field = ' SET '
+        value = None
+        fields = self.get_filled_fields()
+        for field in fields:
+            if inspect.isclass(field.value) and issubclass(field.value, PySqlFieldInterface):
+                value = field.get_owner().get_alias() + '.' + field.get_alias()
+            else:
+                value = '{param}'.format(param=self.get_param_representation())
+                self.params += (field.value,)
+            
+            sql_field += field.get_db_name() + ' = ' + value + ', '  
+        
+        return sql_field[:-2]
+            
+    def get_script(self):
+        script = ''
+        if issubclass(self.table, PySqlDatabaseTableInterface): 
+            script = 'UPDATE {table} {sql_set} {sql_from} {sql_where}'.format(table=self.table.get_db_name(), sql_set=self.get_sql_set(),
+               sql_from=self.script_from, sql_where=self.script_where)       
+            return script
+        else:
+            Exception('The update parameters must be an PySqlDataBaseTAbleInterface')
+    
+    def run(self, commit=True):   
+        script = self.get_script()     
+        self.params += tuple(self.list_params)
+        self.script_executor.execute_dml_script(script, self.params, commit)    
 
 #sql
 class GenericBaseDmlSelectPostgre(GenricBaseDmlSelect):
@@ -184,8 +256,14 @@ class GenericBaseDmlSelectMySql(GenricBaseDmlSelect):
 class GenericBaseDmlSelectOracle(GenricBaseDmlSelect):
     pass
 
-class GenericBaseDmlSelectSqlServer(GenericBaseDmlInsert):
+class GenericBaseDmlSelectSqlServer(GenricBaseDmlSelect):
     pass
+
+class GenericBaseDmlSelectSqlite(GenricBaseDmlSelect):
+    def get_param_representation(self):
+        return '?'
+
+
 
 #insert
 class GenericBaseDmlInsertPostgre(GenericBaseDmlInsert):
@@ -200,3 +278,102 @@ class GenericBaseDmlInsertOracle(GenericBaseDmlInsert):
 
 class GenericBaseDmlInsertSqlServer(GenericBaseDmlInsert):
     pass
+
+class GenericBaseDmlInsertSqlite(GenericBaseDmlInsert):
+    def get_param_representation(self):
+        return '?'
+
+
+#update
+class GenericBaseDmlUpdatePostgre(GenericBaseDmlUpdate):
+    pass
+
+class GenericBaseDmlUpdateMySql(GenericBaseDmlUpdate):
+    pass
+
+class GenericBaseDmlUpdateOracle(GenericBaseDmlUpdate):
+    pass
+
+class GenericBaseDmlUpdateSqlServer(GenericBaseDmlUpdate):
+    pass
+
+class GenericBaseDmlUpdateSqlite(GenericBaseDmlUpdate):
+    execute_using_sql = False
+    def get_param_representation(self):
+        return '?'
+    
+    def get_sql_fiels_to_update(self, include_pk=False):
+        fields = self.get_filled_fields()
+        sql_field = ''
+        for field in fields:
+            if inspect.isclass(field.value) and issubclass(field.value, PySqlFieldInterface):
+                value = field.get_owner().get_alias() + '.' + field.get_alias()
+            else:
+                value = '{param}'.format(param=self.get_param_representation())
+                self.params += (field.value,)
+            
+            sql_field +=  value +  ' ' + field.get_db_name() + ', '  
+        
+        pks = self.table.get_pk_fields()
+        if len(pks) > 1:
+            Exception('Table ' + self.table.get_db_name() + ' has a composite primary key. It`s not allowed for updates using from.')
+        
+        if include_pk:
+            sql_field += self.table.get_alias() + '.' + pks[0].get_db_name() + ' f_primay_key, '  
+        
+        return sql_field[:-2]
+
+
+    def get_script(self):
+        script = ''
+        if issubclass(self.table, PySqlDatabaseTableInterface): 
+            if self.script_from:
+                self.execute_using_sql = True
+                self.add_base_join(self.table)                
+                script = 'SELECT {fields} {sql_from} {sql_where}'.format(
+                    fields=self.get_sql_fiels_to_update(include_pk=True), sql_from=self.script_from, sql_where=self.script_where)
+                return script
+            else:      
+                self.execute_using_sql = False
+                script = 'UPDATE {table} {sql_set} {sql_from} {sql_where}'.format(table=self.table.get_db_name(), sql_set=self.get_sql_set(),
+                sql_from=self.script_from, sql_where=self.script_where)                  
+            return script
+        else:
+            Exception('The update parameters must be an PySqlDataBaseTAbleInterface')
+    
+
+    def run(self, commit=True):   
+        script = self.get_script()     
+        self.params += tuple(self.list_params)        
+        if self.execute_using_sql:            
+            data = self.script_executor.execute_select_script(script, self.params)
+            print(self.params)
+            print(data)                        
+
+            fields = self.get_filled_fields()
+            len_fields = len(fields)          
+            index = 0
+            update_filter = ()
+                                    
+            for row in data:
+                self.table.clear()
+                for ro in row:
+                    if index < len_fields:                                                
+                        fields[index].value = ro
+                    elif index == len_fields:
+                        update_filter = (ro, )
+                    index += 1
+                index = 0
+                if not update_filter:
+                    Exception('No filter param primary found')
+                self.params = ()
+                update_script = 'update {table} {fields} where {pk_field_name} = ?'.format(table=self.table.get_db_name(), fields=self.get_sql_set(),
+                    pk_field_name=self.table.get_pk_fields()[0].get_db_name())                                
+                self.params +=  update_filter 
+                self.script_executor.execute_dml_script(update_script, self.params, False)
+            
+            if commit:
+                self.script_executor.commit()    
+            
+        else:
+            self.script_executor.execute_dml_script(script, self.params, commit)    

@@ -1,8 +1,8 @@
 {
-    "driver": "POSTGRESQL",
-    "host":"localhost",
-    "port": "5432",
-    "databasename": "pysql2",
-    "password": "04062309",
-    "username": "postgres"
+    "driver": "SQLITE",
+    "host":"",
+    "port": "",
+    "databasename": "teste.db",
+    "password": "",
+    "username": ""
 }

@@ -33,7 +33,7 @@ def get_list_of_tables(models_directory, models_package):
 
                 if inspect.isclass(class_model) and issubclass(class_model, PySqlDatabaseTableInterface) and not class_model in list_of_tables:
                     list_of_tables.append(class_model)
-        except Exception as e:
+        except:
             print(class_model)
             raise 
 
@@ -101,11 +101,11 @@ def create_tables(list_of_tables, model_backup_directory):
         table_data = None
         table_data = get_table_saved_structure(table, model_backup_directory)
         
-        if not table_data:
+        if not table_data:            
             executor.execute_ddl_script(table.get_script_create_table())
         
-        if not table_data or not table_data["primary_key"]:
-            executor.execute_ddl_script(table.get_script_create_pk()[1])        
+        if not table_data or not table_data["primary_key"]:            
+            executor.execute_ddl_script(table.get_script_create_pk(False)[1])        
         
         
         if table_data:
@@ -122,20 +122,21 @@ def create_tables(list_of_tables, model_backup_directory):
                 if field.get_db_name() not in old_field_names:
                     executor.execute_ddl_script(table.get_script_add_field(field))
         
-        for index_script in table.get_scripts_indices():
+        for index_script in table.get_scripts_indices(False):
             if not table_data or not index_script[0] in table_data["index"]:
                 executor.execute_ddl_script(index_script[1])
         
-        for check_script in table.get_scripts_check_constraints():
+        for check_script in table.get_scripts_check_constraints(False):
             if not table_data or not check_script[0] in table_data["check_constraints"]:
                 executor.execute_ddl_script(check_script[1])
     
     for table in list_of_tables:
         table_data = None
         table_data = get_table_saved_structure(table, model_backup_directory)
-
-        for fk_script in table.get_scripts_fk():
-            if not table_data or not fk_script[0] in table_data["foreign_key"]:
+        
+        
+        for fk_script in table.get_scripts_fk(False):
+            if not table_data or not fk_script[0] in table_data["foreign_key"]:                
                 executor.execute_ddl_script(fk_script[1])
     
     executor.commit()
