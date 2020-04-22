@@ -3,14 +3,19 @@ from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
 from pysql_command import select, insert, update, delete
-#from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField
+from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, fconcat, fdistinct
 from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
 from test.models.modelo_veiculo import ModeloVeiculo
+from test.models.mercadoria import Produto, Venda
 from pysql_setup import manage_db
+from db_types import NullValue
 
+def recreate_db():
+    base = os.path.join(os.getcwd(), 'test/') 
+    manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
 
 
 class TestDbTables(unittest.TestCase):
@@ -162,8 +167,9 @@ class TestOperators(unittest.TestCase):
 class TestExecutionOnDataBase(unittest.TestCase):
     
     def setUp(self):
-        base = os.path.join(os.getcwd(), 'test/') 
-        manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
+        #base = os.path.join(os.getcwd(), 'test/') 
+        #manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
+        recreate_db()
         Pais.clear()
         Pais.nome.value = 'Brasil'
         Pais.codigo.value = '0055'
@@ -178,6 +184,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
         Estado.clear()
         Estado.nome.value = 'Minas Gerais'
+        Estado.sigla.value = 'MG'
         Estado.pais.value = pais_id
         insert(Estado).run()
 
@@ -363,6 +370,14 @@ class TestExecutionOnDataBase(unittest.TestCase):
 
         for estado in estados:            
             self.assertEqual(estado[0], 'MG')
+
+    def test_update_using_fields(self):
+        Estado.clear()
+        Estado.nome.value = Estado.sigla
+        update(Estado).filter(oequ(Estado.nome, 'Minas Gerais')).run()
+        self.assertEqual(len(select(Estado).filter(oequ(Estado.nome, 'Minas Gerais')).values()), 0)
+        self.assertEqual(len(select(Estado).filter(oequ(Estado.nome, 'MG')).values()), 1)
+
         
     def test_from_update(self):
         filtro_estado = (oequ(Pais.nome, 'Brasil'),)
@@ -393,6 +408,144 @@ class TestExecutionOnDataBase(unittest.TestCase):
         delete(Estado).join(Pais).filter(*filtro).run()
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
         self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)
+         
+class TestStandardFunctions(unittest.TestCase):
+    def setUp(self):
+        recreate_db()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
+
+        get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 13')
+        Venda.quantidade.value = 2
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 13')
+        #Venda.quantidade.value = NullValue
+        insert(Venda).run()
+
+    def test_sum_simple_select(self):
+        vendas = select(Venda).join(Produto).filter(olike(Produto.nome, 'Pneu%')).values(fsum(Produto.valor_unitario, 'soma_valor_unitario'))[0]
+        self.assertEqual(vendas['soma_valor_unitario'], 550.49)
+
+        vendas = select(Venda).join(Produto).filter(olike(Produto.nome, 'Pneu%')).values(fsum(Produto.valor_unitario))[0]
+        self.assertEqual(vendas['valor_unitario'], 550.49)
+    
+    def test_sum_select_group_by(self):
+        vendas = select(Venda).join(Produto).values(fsum(Produto.valor_unitario, 'soma_valor_unitario'), fsum(Venda.quantidade), Produto.categoria)
+        for venda in vendas:
+            if venda['categoria'] == 'PNEU':
+                self.assertEqual(venda['soma_valor_unitario'], 550.49)
+                self.assertEqual(venda['quantidade'], 6)
+            elif venda['categoria'] == 'RODA':
+                self.assertEqual(venda['soma_valor_unitario'], 1490)
+                self.assertEqual(venda['quantidade'], 4)
+            else:
+                raise Exception('CATEGORIA NÃO PERTENCENTE AO FILTRO ' + venda['categoria'])
+    
+    def test_avg(self):
+        vendas = select(Venda).join(Produto).values(favg(Produto.valor_unitario), Produto.categoria)
+        for venda in vendas:
+            if venda['categoria'] == 'PNEU':
+                self.assertEqual(venda['valor_unitario'], 275.245)
+            elif venda['categoria'] == 'RODA':
+                self.assertEqual(venda['valor_unitario'], 745)
+            else:
+                raise Exception('CATEGORIA NÃO PERTENCENTE AO FILTRO ' + venda['categoria'])
+
+    def test_distinct(self):
+        vendas = select(Venda).join(Produto).values(fdistinct(Produto.categoria))
+        self.assertEqual(len(vendas), 2)
+
+        vendas = select(Venda).join(Produto).values(fdistinct(Produto.categoria, Venda.produto))
+        self.assertEqual(len(vendas), 4)
+
+    def test_count(self):
+        vendas = select(Venda).values(fcount())
+        self.assertEqual(vendas[0][0], 4)
+
+        vendas = select(Venda).join(Produto).values(fcount(fdistinct(Produto.categoria)))
+        self.assertEqual(vendas[0][0], 2)
+     
+        vendas = select(Venda).values(fcount(Venda.quantidade))
+        self.assertEqual(vendas[0][0], 3)
+
+        vendas = select(Venda).join(Produto).values(fcount(fdistinct(Produto.categoria)), Produto.categoria)
+        self.assertEqual(vendas[0][0], 1)
+        self.assertEqual(vendas[0][0], 1)
+    
+    def test_max(self):
+        self.assertEqual(select(Produto).values(fmax(Produto.valor_unitario))[0]['valor_unitario'], 950)
+        vendas = select(Produto).order_by(Produto.categoria).values(fmax(Produto.valor_unitario), Produto.categoria)
+        self.assertEqual(vendas[0]['valor_unitario'], 350.50)
+        self.assertEqual(vendas[1]['valor_unitario'], 950)
+        
+        vendas = select(Produto).order_by(Produto.categoria).values(fmax(Produto.valor_unitario))
+        self.assertEqual(vendas[0]['valor_unitario'], 350.50)
+        self.assertEqual(vendas[1]['valor_unitario'], 950.00)
+
+    def test_min(self):
+        self.assertEqual(select(Produto).values(fmin(Produto.valor_unitario))[0]['valor_unitario'], 199.99)
+        vendas = select(Produto).order_by(Produto.categoria).values(fmin(Produto.valor_unitario), Produto.categoria)
+        self.assertEqual(vendas[0]['valor_unitario'], 199.99)
+        self.assertEqual(vendas[1]['valor_unitario'], 540)
+        
+        vendas = select(Produto).order_by(Produto.categoria).values(fmin(Produto.valor_unitario))
+        self.assertEqual(vendas[0]['valor_unitario'], 199.99)
+        self.assertEqual(vendas[1]['valor_unitario'], 540.00)
+    
+    def test_upper(self):
+        produto_nome = select(Produto).filter(oequ(Produto.nome, 'Pneu aro 13')).values(fupper(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'PNEU ARO 13')
+
+        produto_nome = select(Produto).order_by(fupper(Produto.nome)).values(fupper(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'PNEU ARO 13')
+
+    def test_lower(self):
+        produto_nome = select(Produto).filter(oequ(Produto.nome, 'Pneu aro 13')).values(flower(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'pneu aro 13')
+
+        produto_nome = select(Produto).order_by(flower(Produto.nome)).values(flower(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'pneu aro 13')
+    
+    def test_substr(self):    
+        produto_nome = select(Produto).filter(oequ(Produto.categoria, 'PNEU')).\
+            order_by(fsubstr(Produto.nome, 10, 2)).values(fsubstr(Produto.nome, 10, 2))[0]['nome']
+        self.assertEqual(produto_nome, '13')
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,8 +1,9 @@
 from field_tools import FieldTools
 #from sql_db_tables import BaseDbTable 
-from interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface
+from interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface, PySqlDistinctClause
 import inspect
 from friendly_data import FriendlyData
+
 #from pysql_command import update
 #from sql_operators import oequ
 
@@ -73,6 +74,8 @@ class GenricBaseDmlScripts(DmlBase):
                             count += 1        
             else:
                 raise Exception('Join must be preceded for an operator update or select')
+        else:
+            raise NotImplementedError
         
         self.end_operation_add_join(table)
 
@@ -108,6 +111,9 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
     def __init__(self, script_executor_object):
         super(GenricBaseDmlSelect, self).__init__(script_executor_object)
         self.fields_to_select = None
+        self.script_order_by = ''
+        self.aggregated_fields = []
+        self.all_fields = []
 
     def set_fields(self, *fields):
         self.fields_to_select = fields
@@ -115,11 +121,15 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
         
     
     def get_fields_names_and_script(self, *fields):
-        fields_names = []        
+        fields_names = []   
         str_fields = ''
 
         if fields:
-            self.fields_to_select = fields
+            if len(fields) == 1 and issubclass(type(fields[0]), PySqlDistinctClause):
+                self.fields_to_select = fields[0].get_fields()
+                str_fields += ' DISTINCT '
+            else:
+                self.fields_to_select = fields
         
         if self.fields_to_select:
             for field in self.fields_to_select:
@@ -130,41 +140,72 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                     is_db_table = issubclass(field, PySqlDatabaseTableInterface)
                 if issubclass(type(field), tuple) :
                     fields_names.append(field[1])
-                    str_fields += '{table_alias}.{field_name} {field_alias}, '. \
-                        format(table_alias=field[0].get_owner().get_alias(),
-                            field_name=field[0].get_db_name(), field_alias=field[1])
+                    self.all_fields.append(field[0])
+                    if field[0].is_used_in_aggregated_function():
+                        self.aggregated_fields.append(field[0])
+                    #str_fields += '{table_alias}.{field_name} {field_alias}, '. \
+                    #    format(table_alias=field[0].get_owner().get_alias(),
+                    #        field_name=field[0].get_db_name(), field_alias=field[1])
+                    str_fields += field[0].get_sql_for_field() + ' ' + field[1] + ', '
                 elif is_db_table:                                        
                     str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
                     for f in field.get_owner().get_fields():
                         fields_names.append(f.get_db_db_name())
+                        self.all_fields.append(field)
                 else:                    
-                    fields_names.append(field.get_db_name())
-                    str_fields += '{alias}.{field_name}, '.format(alias=field.get_owner().get_alias(), \
-                        field_name=field.get_db_name())
+                    fields_names.append(field.get_alias())
+                    self.all_fields.append(field)
+                    if field.is_used_in_aggregated_function():
+                        self.aggregated_fields.append(field)
+
+                    #str_fields += '{alias}.{field_name}, '.format(alias=field.get_owner().get_alias(), \
+                    #    field_name=field.get_db_name())
+                    str_fields += field.get_sql_for_field() + ', '
 
             str_fields = str_fields[:-2]
         else:            
             for operation in self.list_operations:                
                 table = operation["table"]
-                table_name = table.get_alias()
                 for f in table.get_fields():
-                    str_fields += '{table_name}.{field_name}, '.format(table_name=table_name, field_name=f.get_db_name())
+                    str_fields += f.get_sql_for_field() + ', '
                     fields_names.append(f.get_db_name())
+                    self.all_fields.append(f)
             
             str_fields = str_fields[:-2]
                 
+        return fields_names , str_fields   
 
-        return fields_names , str_fields    
+    def get_script_group_by(self):
+        str_group = ''
+        if len(self.aggregated_fields) > 0:
+            
+            for f in self.all_fields:
+                if not f.is_used_in_aggregated_function():
+                    str_group += f.get_sql_for_field(use_alias=False) + ', '
+            if str_group:
+               str_group = ' GROUP BY ' + str_group[:-2]
+                
+        return str_group
 
     def get_sql_and_fields_names(self, *fields):                
         fields_names, str_fields = self.get_fields_names_and_script(*fields)
-        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where
+        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where + self.get_script_group_by() + self.script_order_by
         return script.strip(), fields_names
     
     def get_sql(self, *fields):
         sql, fields_names = self.get_sql_and_fields_names(*fields)
         return sql
     
+    def order_by(self, *fields):
+        for f in fields:            
+            self.script_order_by += f.get_sql_for_field(use_alias=False) + ', '
+            if not f in self.all_fields:
+                self.all_fields.append(f)
+        
+        self.script_order_by = ' ORDER BY ' + self.script_order_by[:-2]
+
+        return self
+
     def values(self, *fields):
         sql, fields_names = self.get_sql_and_fields_names(*fields)
         
@@ -261,8 +302,8 @@ class GenericBaseDmlUpdate(GenericBaseDmlUpdateDelete):
         value = None
         fields = self.get_filled_fields()
         for field in fields:
-            if inspect.isclass(field.value) and issubclass(field.value, PySqlFieldInterface):
-                value = field.get_owner().get_alias() + '.' + field.get_alias()
+            if FieldTools.is_db_field(field.value):
+                value = field.get_owner().get_alias() + '.' + field.value.get_db_name()
             else:
                 value = '{param}'.format(param=self.get_param_representation())
                 self.params += (field.value,)

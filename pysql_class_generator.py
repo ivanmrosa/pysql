@@ -46,9 +46,9 @@ class PySqlClassGenerator(object):
         cls.update_command_class = config['SQL_COMMAND_CLASSES']['update_script']
         cls.delete_command_class = config['SQL_COMMAND_CLASSES']['delete_script']
         cls.script_executor = config['SCRIPT_EXECUTOR_CLASS']
+        cls.sql_functions_config_class = config['SQL_FUNCTIONS_CLASS']
         
-    
-    
+        
     @classmethod
     def get_db_table_class(cls):
         cls.define_initial_data(DB_DRIVER)
@@ -91,8 +91,13 @@ class PySqlClassGenerator(object):
     @classmethod
     def get_command_delete_object(cls):
         cls.define_initial_data(DB_DRIVER)
-        return cls.delete_command_class(cls.get_script_executor())
-        
+        return cls.delete_command_class(cls.get_script_executor())    
+    
+    @classmethod
+    def get_sql_functions_config_class(cls):
+        cls.define_initial_data(DB_DRIVER)
+        return cls.sql_functions_config_class
+
     @classmethod
     def get_script_executor(cls):
         cls.define_initial_data(DB_DRIVER)

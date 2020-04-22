@@ -31,6 +31,8 @@ from pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelect
     GenericBaseDmlUpdateOracle, GenericBaseDmlUpdateSqlServer, GenericBaseDmlInsertSqlite, GenericBaseDmlUpdateSqlite, GenericBaseDmlDeletePostgre, GenericBaseDmlDeleteMySql, \
     GenericBaseDmlDeleteOracle, GenericBaseDmlDeleteSqlServer, GenericBaseDmlDeleteSqlite
 
+from pysql_functions_config import PysqlFunctionsConfigPostgre, PysqlFunctionsConfigOracle, PysqlFunctionsConfigSqlServer, PysqlFunctionsConfigMySql, PysqlFunctionsConfigSqlite
+
 script_executor_class = None
 
 if DB_DRIVER == POSTGRESQL:
@@ -45,6 +47,7 @@ DRIVER_CLASSES_CONFIG = {
    POSTGRESQL : {
        'DB_TABLE_CLASS': PostgreDbTable,
        'SCRIPT_EXECUTOR_CLASS': script_executor_class,
+       'SQL_FUNCTIONS_CLASS' : PysqlFunctionsConfigPostgre,
        'SQL_OPERATORS_CLASSES': {
            'equal': GenericOequPostgre,
            'different': GenericOdifPostgre,
@@ -65,7 +68,7 @@ DRIVER_CLASSES_CONFIG = {
           'insert_script': GenericBaseDmlInsertPostgre,
           'update_script': GenericBaseDmlUpdatePostgre,
           'delete_script': GenericBaseDmlDeletePostgre
-       },
+       },       
        'FIELDS_CONFIG':{
             'IntegerField': {'NAME' : 'INTEGER', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
             'SmallIntField': {'NAME': 'SMALLINT', 'HAS_SIZE': False, 'HAS_SCALE': False, 'HAS_PRECISION': False},
@@ -86,6 +89,7 @@ DRIVER_CLASSES_CONFIG = {
     SQLITE : {
        'DB_TABLE_CLASS': SqliteDbTable,
        'SCRIPT_EXECUTOR_CLASS': script_executor_class,
+       'SQL_FUNCTIONS_CLASS' : PysqlFunctionsConfigSqlite,
        'SQL_OPERATORS_CLASSES': {
            'equal': GenericOequSqlite,
            'different': GenericOdifSqlite,

@@ -68,6 +68,6 @@ class FriendlyData(object):
             raise StopIteration
         else:
             self.current += 1
-            self.friendly_row = self.data[self.current - 1]
+            self.friendly_row.row = self.data[self.current - 1]
             return self.friendly_row
             

@@ -51,7 +51,11 @@ class PySqlRunScriptInterface(ABC):
 class PySqlCommandInterface(ABC):
     pass
     
-    
+class PySqlDistinctClause(ABC):
+    def get_fields(self):
+        pass
+
+
 #Bolab.join(Dbol, (Bolab.cod_bol,  Dbol.cod_bol)).\
 #    filter( ftor((eq(dbol.tipo, 3), eq(dbol.codigo, 23)), (eq(dbol.tipo, 3), eq(dbol.codigo, 23))) ).\
 #    select()        

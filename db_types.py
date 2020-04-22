@@ -1,6 +1,7 @@
 from pysql_config import DB_DRIVER, DRIVER_CLASSES_CONFIG
 from interface import PySqlFieldInterface
 import inspect 
+from copy import deepcopy
 
 
 class NullValue(object):
@@ -28,9 +29,19 @@ class Field(PySqlFieldInterface):
         self._default = default
         self._permitted_values = permitted_values
         self._value_is_string = False
+
+        self.__temporary_alias = ''
+        self.__temporary_text_function = ''
+        self.__used_in_aggregated_function = False
     
     def get_db_name(self):
         return self._db_name
+    
+    def get_alias(self):
+        if self.__temporary_alias:
+            return self.__temporary_alias
+        else:
+            return self._db_name
     
     def get_generic_type_name(self):
         return type(self).__name__
@@ -95,10 +106,37 @@ class Field(PySqlFieldInterface):
         
         return script
 
-
     def get_script(self):                        
         return self.get_db_name() + ' ' + self.get_field_type_and_configureted()
     
+    def is_used_in_aggregated_function(self):
+        return self.__used_in_aggregated_function
+    
+    def get_field_configureted_for_functions(self, text_function, alias, is_aggregated):
+        ''' pass function using the pattern {field} where the field should be used
+          Ex.: fsubstr({field}, 1 ,6) -> copy the field value from first position to 6 next sixth positions 
+        '''
+        self.__temporary_alias = alias
+        self.__temporary_text_function = text_function
+        self.__used_in_aggregated_function = is_aggregated
+        new_field = deepcopy(self)
+        self.__temporary_alias = ''
+        self.__temporary_text_function = ''
+        self.__used_in_aggregated_function = False
+        return new_field
+    
+    def get_sql_for_field(self, use_alias = True):
+        standard_text = '{table_name}.{field_name}'.format(table_name=self.get_owner().get_alias(),  field_name=self.get_db_name())
+        if self.__temporary_text_function:            
+            text = self.__temporary_text_function.format(field=standard_text) + ' '
+            if use_alias:
+                text += self.__temporary_alias + ' '
+        else:        
+            text = standard_text
+        self.__temporary_alias = ''
+        self.__temporary_text_function = ''
+        return text 
+        
     @property
     def value(self):
         return self._value

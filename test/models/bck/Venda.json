@@ -1,0 +1,1 @@
+{"table_name": "Venda", "primary_key": {"name": "", "fields": []}, "index": {}, "foreign_key": {}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "Produto_id", "type": "IntegerField"}, {"name": "quantidade", "type": "IntegerField"}], "check_constraints": {}}
