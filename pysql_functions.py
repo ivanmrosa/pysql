@@ -60,7 +60,7 @@ def ftrim(field, character = ' ', alias = ''):
     if FieldTools.is_db_field(character):
         temp_character = character.get_sql_for_field()
     else:
-        temp_character = '''{character}'''.format(character=character)
+        temp_character = "'" + character + "'"
 
     text_function = PySqlClassGenerator.get_sql_functions_config_class().ftrim(temp_character)
     return field.get_field_configureted_for_functions(text_function, alias, False)
@@ -69,7 +69,7 @@ def fltrim(field, character = ' ', alias = ''):
     if FieldTools.is_db_field(character):
         temp_character = character.get_sql_for_field()
     else:
-        temp_character = '''{character}'''.format(character=character)
+        temp_character = "'" + character + "'"
 
     text_function = PySqlClassGenerator.get_sql_functions_config_class().fltrim(temp_character)
     return field.get_field_configureted_for_functions(text_function, alias, False)
@@ -78,7 +78,7 @@ def frtrim(field, character = ' ', alias = ''):
     if FieldTools.is_db_field(character):
         temp_character = character.get_sql_for_field()
     else:
-        temp_character = '''{character}'''.format(character=character)
+        temp_character = "'" + character + "'"
 
     text_function = PySqlClassGenerator.get_sql_functions_config_class().frtrim(temp_character)
     return field.get_field_configureted_for_functions(text_function, alias, False)
@@ -91,12 +91,12 @@ def freplace(field, replace_this, replace_to, alias = ''):
     if FieldTools.is_db_field(replace_this):
         temp_replace_this = replace_this.get_sql_for_field()
     else:
-        temp_replace_this = '''{character}'''.format(character=temp_replace_this)
+        temp_replace_this = "'{character}'".format(character=replace_this)
     
     if FieldTools.is_db_field(replace_to):
         temp_replace_to = replace_to.get_sql_for_field()
     else:
-        temp_replace_to = '''{character}'''.format(character=temp_replace_to)
+        temp_replace_to = "'{character}'".format(character=replace_to)
 
     text_function = PySqlClassGenerator.get_sql_functions_config_class().freplace(temp_replace_this, temp_replace_to)
     return field.get_field_configureted_for_functions(text_function, alias, False)
@@ -105,9 +105,9 @@ def finstr(field, substring, alias = ''):
     if FieldTools.is_db_field(substring):
         temp_substring = temp_substring.get_sql_for_field()
     else:
-        temp_substring = '''{character}'''.format(character=temp_substring)
+        temp_substring = "'{character}'".format(character=substring)
 
-    text_function = PySqlClassGenerator.get_sql_functions_config_class().freplace(temp_substring)
+    text_function = PySqlClassGenerator.get_sql_functions_config_class().finstr(temp_substring)
     return field.get_field_configureted_for_functions(text_function, alias, False)
 
 

@@ -3,7 +3,7 @@ from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
 from pysql_command import select, insert, update, delete
-from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, fconcat, fdistinct
+from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, fconcat, fdistinct, fconcat
 from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
@@ -12,6 +12,7 @@ from test.models.modelo_veiculo import ModeloVeiculo
 from test.models.mercadoria import Produto, Venda
 from pysql_setup import manage_db
 from db_types import NullValue
+
 
 def recreate_db():
     base = os.path.join(os.getcwd(), 'test/') 
@@ -72,12 +73,12 @@ class TestFields(unittest.TestCase):
     def test_get_field_owner(self):
         self.assertEqual(Pais.id.get_owner().get_db_name(), 'Pais')
 
-@unittest.skipIf(DB_DRIVER != 'POSTGRES', 'NOT POSTGRE') 
+@unittest.skipIf(DB_DRIVER != 'POSTGRESQL', 'NOT POSTGRE') 
 class TestOperators(unittest.TestCase):
     
     def test_sql_simple_select(self):        
         sql = select(Estado).get_sql()
-        self.assertEqual(sql.upper(), 'SELECT * FROM ESTADO ESTADO')
+        self.assertEqual(sql.upper(), 'SELECT ESTADO.ID, ESTADO.PAIS_ID, ESTADO.NOME, ESTADO.SIGLA FROM ESTADO ESTADO')
     
     def test_sql_simple_select_with_fields(self):
         sql = select(Estado).get_sql(Estado.nome)
@@ -87,7 +88,7 @@ class TestOperators(unittest.TestCase):
 
     def test_sql_select_with_join(self):
         sql = select(Estado).join(Pais).get_sql()
-        sql_test = 'SELECT * FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID, ESTADO.NOME, ESTADO.SIGLA, PAIS.ID, PAIS.NOME, PAIS.CODIGO FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
         self.assertEqual(sql.upper(), sql_test)
 
         sql = select(Estado).join(Pais).get_sql(Pais.nome, Estado.nome)
@@ -435,6 +436,12 @@ class TestStandardFunctions(unittest.TestCase):
         Produto.categoria.value = 'RODA'
         Produto.valor_unitario.value = 950
         insert(Produto).run()
+        
+        Produto.clear()
+        Produto.nome.value = ' Limpador de parabrisa '
+        Produto.categoria.value = 'ZZZZ'
+        Produto.valor_unitario.value = 0
+        insert(Produto).run()
 
         get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
         
@@ -460,20 +467,20 @@ class TestStandardFunctions(unittest.TestCase):
 
     def test_sum_simple_select(self):
         vendas = select(Venda).join(Produto).filter(olike(Produto.nome, 'Pneu%')).values(fsum(Produto.valor_unitario, 'soma_valor_unitario'))[0]
-        self.assertEqual(vendas['soma_valor_unitario'], 550.49)
+        self.assertEqual(float(vendas['soma_valor_unitario']), 550.49)
 
         vendas = select(Venda).join(Produto).filter(olike(Produto.nome, 'Pneu%')).values(fsum(Produto.valor_unitario))[0]
-        self.assertEqual(vendas['valor_unitario'], 550.49)
+        self.assertEqual(float(vendas['valor_unitario']), 550.49)
     
     def test_sum_select_group_by(self):
         vendas = select(Venda).join(Produto).values(fsum(Produto.valor_unitario, 'soma_valor_unitario'), fsum(Venda.quantidade), Produto.categoria)
         for venda in vendas:
             if venda['categoria'] == 'PNEU':
-                self.assertEqual(venda['soma_valor_unitario'], 550.49)
-                self.assertEqual(venda['quantidade'], 6)
+                self.assertEqual(float(venda['soma_valor_unitario']), 550.49)
+                self.assertEqual(float(venda['quantidade']), 6)
             elif venda['categoria'] == 'RODA':
-                self.assertEqual(venda['soma_valor_unitario'], 1490)
-                self.assertEqual(venda['quantidade'], 4)
+                self.assertEqual(float(venda['soma_valor_unitario']), 1490)
+                self.assertEqual(float(venda['quantidade']), 4)
             else:
                 raise Exception('CATEGORIA NÃO PERTENCENTE AO FILTRO ' + venda['categoria'])
     
@@ -481,9 +488,9 @@ class TestStandardFunctions(unittest.TestCase):
         vendas = select(Venda).join(Produto).values(favg(Produto.valor_unitario), Produto.categoria)
         for venda in vendas:
             if venda['categoria'] == 'PNEU':
-                self.assertEqual(venda['valor_unitario'], 275.245)
+                self.assertEqual(float(venda['valor_unitario']), 275.245)
             elif venda['categoria'] == 'RODA':
-                self.assertEqual(venda['valor_unitario'], 745)
+                self.assertEqual(float(venda['valor_unitario']), 745)
             else:
                 raise Exception('CATEGORIA NÃO PERTENCENTE AO FILTRO ' + venda['categoria'])
 
@@ -511,41 +518,65 @@ class TestStandardFunctions(unittest.TestCase):
     def test_max(self):
         self.assertEqual(select(Produto).values(fmax(Produto.valor_unitario))[0]['valor_unitario'], 950)
         vendas = select(Produto).order_by(Produto.categoria).values(fmax(Produto.valor_unitario), Produto.categoria)
-        self.assertEqual(vendas[0]['valor_unitario'], 350.50)
-        self.assertEqual(vendas[1]['valor_unitario'], 950)
+        self.assertEqual(float(vendas[0]['valor_unitario']), 350.50)
+        self.assertEqual(float(vendas[1]['valor_unitario']), 950)
         
         vendas = select(Produto).order_by(Produto.categoria).values(fmax(Produto.valor_unitario))
-        self.assertEqual(vendas[0]['valor_unitario'], 350.50)
-        self.assertEqual(vendas[1]['valor_unitario'], 950.00)
+        self.assertEqual(float(vendas[0]['valor_unitario']), 350.50)
+        self.assertEqual(float(vendas[1]['valor_unitario']), 950.00)
 
     def test_min(self):
-        self.assertEqual(select(Produto).values(fmin(Produto.valor_unitario))[0]['valor_unitario'], 199.99)
+        self.assertEqual(float(select(Produto).filter(onlike(Produto.nome, "%Limpador%")).values(fmin(Produto.valor_unitario))[0]['valor_unitario']), 199.99)
         vendas = select(Produto).order_by(Produto.categoria).values(fmin(Produto.valor_unitario), Produto.categoria)
-        self.assertEqual(vendas[0]['valor_unitario'], 199.99)
-        self.assertEqual(vendas[1]['valor_unitario'], 540)
+        self.assertEqual(float(vendas[0]['valor_unitario']), 199.99)
+        self.assertEqual(float(vendas[1]['valor_unitario']), 540)
         
         vendas = select(Produto).order_by(Produto.categoria).values(fmin(Produto.valor_unitario))
-        self.assertEqual(vendas[0]['valor_unitario'], 199.99)
-        self.assertEqual(vendas[1]['valor_unitario'], 540.00)
+        self.assertEqual(float(vendas[0]['valor_unitario']), 199.99)
+        self.assertEqual(float(vendas[1]['valor_unitario']), 540.00)
     
     def test_upper(self):
         produto_nome = select(Produto).filter(oequ(Produto.nome, 'Pneu aro 13')).values(fupper(Produto.nome))[0]['nome']
         self.assertEqual(produto_nome, 'PNEU ARO 13')
 
-        produto_nome = select(Produto).order_by(fupper(Produto.nome)).values(fupper(Produto.nome))[0]['nome']
+        produto_nome = select(Produto).filter(onlike(Produto.nome, "%Limpador%")).order_by(fupper(Produto.nome)).values(fupper(Produto.nome))[0]['nome']
         self.assertEqual(produto_nome, 'PNEU ARO 13')
 
     def test_lower(self):
         produto_nome = select(Produto).filter(oequ(Produto.nome, 'Pneu aro 13')).values(flower(Produto.nome))[0]['nome']
         self.assertEqual(produto_nome, 'pneu aro 13')
 
-        produto_nome = select(Produto).order_by(flower(Produto.nome)).values(flower(Produto.nome))[0]['nome']
+        produto_nome = select(Produto).filter(onlike(Produto.nome, "%Limpador%")).order_by(flower(Produto.nome)).values(flower(Produto.nome))[0]['nome']
         self.assertEqual(produto_nome, 'pneu aro 13')
     
     def test_substr(self):    
         produto_nome = select(Produto).filter(oequ(Produto.categoria, 'PNEU')).\
             order_by(fsubstr(Produto.nome, 10, 2)).values(fsubstr(Produto.nome, 10, 2))[0]['nome']
         self.assertEqual(produto_nome, '13')
+    
+    def test_trim(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(ftrim(Produto.nome, 'P'))[0]['nome'], 'neu aro 15')
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(ftrim(Produto.nome))[0]['nome'], 'Limpador de parabrisa')
+        
+
+    def test_ltrim(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(fltrim(Produto.nome, 'P'))[0]['nome'], 'neu aro 15')        
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(fltrim(Produto.nome))[0]['nome'], 'Limpador de parabrisa ')
+
+    def test_rtrim(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(frtrim(Produto.nome, '5'))[0]['nome'], 'Pneu aro 1')
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(frtrim(Produto.nome))[0]['nome'], ' Limpador de parabrisa')
+    
+    def test_length(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(flength(Produto.nome))[0]['nome'], 23)
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(flength(ftrim(Produto.nome)))[0]['nome'], 21)
+    
+    def test_replace(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(freplace(Produto.nome, 'p', 'b'))[0]['nome'], \
+            ' Limbador de barabrisa ')
+    
+    def test_instr(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(finstr(Produto.nome, 'L'))[0]['nome'], 2)
 
 if __name__ == '__main__':
     unittest.main()

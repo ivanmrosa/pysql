@@ -36,15 +36,15 @@ class PysqlFunctionsConfig(object):
 
     @staticmethod
     def ftrim(character): 
-        return 'TRIM(both {character} from {field})'.format(character=character)
+        return 'TRIM(both {character} from {field})'.format(character=character, field='{field}')
 
     @staticmethod
     def fltrim(character): 
-        return 'TRIM(start {character} from {field})'.format(character=character)
+        return 'TRIM(LEADING {character} from {field})'.format(character=character, field='{field}')
 
     @staticmethod
     def frtrim(character): 
-        return 'TRIM(end ''{character}'' from {field})'.format(character=character)
+        return 'TRIM(TRAILING ''{character}'' from {field})'.format(character=character, field='{field}')
 
     @staticmethod
     def flength(): 
@@ -52,11 +52,11 @@ class PysqlFunctionsConfig(object):
 
     @staticmethod
     def freplace(replace_this, replace_to): 
-        return 'REPLACE({field}, {replace_this}, {replace_to})'.format(replace_this=replace_this, replace_to=replace_to)
+        return 'REPLACE({field}, {replace_this}, {replace_to})'.format(replace_this=replace_this, replace_to=replace_to, field='{field}')
     
     @staticmethod
     def finstr(substring): 
-        return 'POSITION({substring} in {field})'.format(substring=substring)
+        return 'POSITION({substring} in {field})'.format(substring=substring, field='{field}')
     
     @staticmethod
     def fconcat():
@@ -76,19 +76,22 @@ class PysqlFunctionsConfigMySql(PysqlFunctionsConfig):
 
 class PysqlFunctionsConfigSqlite(PysqlFunctionsConfig):
     @staticmethod
-    def finstr(): 
-        return 'INSTR({field}, {substring})'
+    def finstr(substring): 
+        return 'INSTR({field}, {substring})'.format(substring=substring, field='{field}')
 
     @staticmethod
     def fsubstr(inital, length): 
         return 'SUBSTR({field}, {initial}, {length})'.format(field='{field}', initial=inital, length=length)
+
     @staticmethod
     def ftrim(character): 
-        return 'TRIM({field}, {character})'.format(character=character)
+        return 'TRIM({field}, {character})'.format(character=character, field='{field}' )
+
     @staticmethod
     def fltrim(character): 
-        return 'LTRIM({field}, {character})'.format(character=character)
+        return 'LTRIM({field}, {character})'.format(character=character, field='{field}')
+        
     @staticmethod
     def frtrim(character): 
-        return 'RTRIM({field}, {character})'.format(character=character)
+        return 'RTRIM({field}, {character})'.format(character=character, field='{field}')
     

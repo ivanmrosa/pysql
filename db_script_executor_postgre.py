@@ -16,6 +16,10 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
         self.__password = password     
         self.__host = host
         self.__port = port
+    
+    def print_log(self, script):
+        #print(script)
+        pass
 
     def open_connection(self):
         if not self.connector:
@@ -33,24 +37,26 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
             self.connector = None
     
     def execute_ddl_script(self, script, auto_commit=False):
-        print(script)
+        self.print_log(script)        
         self.open_connection()
         self.cursor.execute(script)
-        
+
         if auto_commit:
             self.connector.commit()
             self.close_connection()
 
 
-    def execute_dml_script(self, script, params, auto_commit = False):
+    def execute_dml_script(self, script, params, auto_commit = False):        
+        self.print_log(script)
         self.open_connection()
         self.cursor.execute(script, params)
-        
+
         if auto_commit:
             self.connector.commit()        
             self.close_connection()
 
     def execute_select_script(self, sql, params):
+        self.print_log(sql)        
         self.open_connection()
         self.cursor.execute(sql, params)
         results =  self.cursor.fetchall()
@@ -63,6 +69,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
             self.close_connection()
     
     def run_ddl_isolated(self, script, databasename):
+        self.print_log(script)                
         self.close_connection()
         original_database = self.__databasename        
         self.__databasename = databasename    

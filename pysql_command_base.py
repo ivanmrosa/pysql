@@ -143,14 +143,11 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                     self.all_fields.append(field[0])
                     if field[0].is_used_in_aggregated_function():
                         self.aggregated_fields.append(field[0])
-                    #str_fields += '{table_alias}.{field_name} {field_alias}, '. \
-                    #    format(table_alias=field[0].get_owner().get_alias(),
-                    #        field_name=field[0].get_db_name(), field_alias=field[1])
                     str_fields += field[0].get_sql_for_field() + ' ' + field[1] + ', '
                 elif is_db_table:                                        
                     str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
-                    for f in field.get_owner().get_fields():
-                        fields_names.append(f.get_db_db_name())
+                    for f in field.get_fields():
+                        fields_names.append(f.get_db_name())
                         self.all_fields.append(field)
                 else:                    
                     fields_names.append(field.get_alias())
@@ -158,8 +155,6 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                     if field.is_used_in_aggregated_function():
                         self.aggregated_fields.append(field)
 
-                    #str_fields += '{alias}.{field_name}, '.format(alias=field.get_owner().get_alias(), \
-                    #    field_name=field.get_db_name())
                     str_fields += field.get_sql_for_field() + ', '
 
             str_fields = str_fields[:-2]
@@ -225,11 +220,7 @@ class GenericBaseDmlInsertUpdate(DmlBase):
             self.script_executor.commit()
             self.script_executor.close_connector()
 
-    def run(self, commit=True):
-        
-        #if issubclass(table_or_select_object, PySqlDatabaseTableInterface):
-        #if not self.table:
-        #    raise Exception('Table must be informed to insert.')
+    def run(self, commit=True):        
         self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
     
     def get_script(self):

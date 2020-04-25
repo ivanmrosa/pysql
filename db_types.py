@@ -33,6 +33,7 @@ class Field(PySqlFieldInterface):
         self.__temporary_alias = ''
         self.__temporary_text_function = ''
         self.__used_in_aggregated_function = False
+        self.__is_deep_copy = False
     
     def get_db_name(self):
         return self._db_name
@@ -111,24 +112,38 @@ class Field(PySqlFieldInterface):
     
     def is_used_in_aggregated_function(self):
         return self.__used_in_aggregated_function
-    
+        
     def get_field_configureted_for_functions(self, text_function, alias, is_aggregated):
         ''' pass function using the pattern {field} where the field should be used
           Ex.: fsubstr({field}, 1 ,6) -> copy the field value from first position to 6 next sixth positions 
         '''
         self.__temporary_alias = alias
-        self.__temporary_text_function = text_function
-        self.__used_in_aggregated_function = is_aggregated
+        if self.__is_deep_copy:
+            self.__temporary_text_function = text_function.format(field=self.__temporary_text_function)
+        else:
+            self.__temporary_text_function = text_function
+        
+        self.__is_deep_copy = True
+        
+        if not self.__used_in_aggregated_function:
+            self.__used_in_aggregated_function = is_aggregated
+        
         new_field = deepcopy(self)
         self.__temporary_alias = ''
         self.__temporary_text_function = ''
         self.__used_in_aggregated_function = False
+        self.__is_deep_copy = False
         return new_field
     
     def get_sql_for_field(self, use_alias = True):
         standard_text = '{table_name}.{field_name}'.format(table_name=self.get_owner().get_alias(),  field_name=self.get_db_name())
-        if self.__temporary_text_function:            
-            text = self.__temporary_text_function.format(field=standard_text) + ' '
+        if self.__temporary_text_function:        
+            
+            if '{field}' in self.__temporary_text_function:    
+                text = self.__temporary_text_function.format(field=standard_text) + ' '
+            else:
+                text = self.__temporary_text_function
+
             if use_alias:
                 text += self.__temporary_alias + ' '
         else:        
@@ -215,6 +230,9 @@ class NumericField(Field):
     pass
 
 class MoneyField(Field):
+    pass
+
+class FloatField(Field):
     pass
 
 class CharacterField(Field):

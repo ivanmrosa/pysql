@@ -144,8 +144,6 @@ def create_tables(list_of_tables, model_backup_directory):
         save_table_estructure(table, model_backup_directory)
 
 
-
-
 def create_database(models_directory, model_backup_directory, package):
     executor = PySqlClassGenerator.get_script_executor()  
     executor.create_database()
@@ -181,12 +179,16 @@ def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_packag
     #check if the cache file exists
       #if exists, then merge files and apply the differences 
       #if not exists, then creates all tables
-    
-    #fodas vou tentar criar tudo sem verificar nada kkkk
+        
     if base_dir:
-        BASE_DIR = base_dir
+        if os.path.exists(base_dir):
+            BASE_DIR = base_dir
+        else:
+            BASE_DIR = os.path.join(os.getcwd(), base_dir)
     else:
         BASE_DIR = os.getcwd()
+    
+    print(BASE_DIR)
     
     MODEL_DIR = os.path.join(BASE_DIR, 'models')
     MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')     
