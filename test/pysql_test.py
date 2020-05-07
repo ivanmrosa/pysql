@@ -3,7 +3,8 @@ from pysql_config import DB_DRIVER
 from sql_db_tables import BaseDbTable
 from sql_operators import *
 from pysql_command import select, insert, update, delete
-from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, fconcat, fdistinct, fconcat
+from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
+    fconcat, fdistinct, fconcat, frpad, flpad
 from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
@@ -577,6 +578,79 @@ class TestStandardFunctions(unittest.TestCase):
     
     def test_instr(self):
         self.assertEqual(select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values(finstr(Produto.nome, 'L'))[0]['nome'], 2)
+
+    def test_rpad(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(frpad(Produto.nome, '0', 13))[0]['nome'], 'Pneu aro 1500')
+
+    def test_lpad(self):
+        self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(flpad(Produto.nome, '0', 13))[0]['nome'], '00Pneu aro 15')
+    
+    #functions used in filter
+    def test_upper_filter(self):
+        produto_nome = select(Produto).filter(oequ(fupper(Produto.nome), 'PNEU ARO 13')).values(fupper(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'PNEU ARO 13')
+
+        produto_nome = select(Produto).filter(onlike(fupper(Produto.nome), "%LIMPADOR%")).order_by(fupper(Produto.nome)).values(fupper(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'PNEU ARO 13')
+
+    def test_lower_filter(self):
+        produto_nome = select(Produto).filter(oequ(flower(Produto.nome), 'pneu aro 13')).values(flower(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'pneu aro 13')
+
+        produto_nome = select(Produto).filter(onlike(flower(Produto.nome), "%limpador%")).order_by(flower(Produto.nome)).values(flower(Produto.nome))[0]['nome']
+        self.assertEqual(produto_nome, 'pneu aro 13')
+    
+    def test_substr_filter(self):    
+        produto_nome = select(Produto).filter(oequ(Produto.categoria, 'PNEU'), 
+            oequ(fsubstr(Produto.nome, 10, 2), '13')).\
+            order_by(fsubstr(Produto.nome, 10, 2)).values(fsubstr(Produto.nome, 10, 2))[0]['nome']
+        self.assertEqual(produto_nome, '13')
+    
+    def test_trim_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(ftrim(Produto.nome, 'P'), 'neu aro 15')).values(ftrim(Produto.nome, 'P'))[0]['nome'], 'neu aro 15')
+        self.assertEqual(select(Produto).filter(oequ(ftrim(Produto.nome), 'Limpador de parabrisa')).\
+            values(ftrim(Produto.nome))[0]['nome'], 'Limpador de parabrisa')
+        
+    def test_ltrim_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(fltrim(Produto.nome, 'P'), 'neu aro 15')).\
+            values(fltrim(Produto.nome, 'P'))[0]['nome'], 'neu aro 15')        
+        self.assertEqual(select(Produto).filter(oequ(fltrim(Produto.nome), 'Limpador de parabrisa ')).\
+            values(fltrim(Produto.nome))[0]['nome'], 'Limpador de parabrisa ')
+
+    def test_rtrim_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(frtrim(Produto.nome, '5'), 'Pneu aro 1')).\
+            values(frtrim(Produto.nome, '5'))[0]['nome'], 'Pneu aro 1')
+        self.assertEqual(select(Produto).filter(oequ(frtrim(Produto.nome), ' Limpador de parabrisa')).\
+            values(frtrim(Produto.nome))[0]['nome'], ' Limpador de parabrisa')
+    
+    def test_length_filter(self):
+        self.assertEqual(select(Produto).filter(
+            oequ(Produto.nome, ' Limpador de parabrisa '), \
+            oequ(flength(Produto.nome), 23) ). \
+            values(flength(Produto.nome))[0]['nome'], 23)
+        
+        self.assertEqual(select(Produto).filter(
+                oequ(Produto.nome, ' Limpador de parabrisa '),
+                oequ(flength(ftrim(Produto.nome)), 21) \
+            ).values(flength(ftrim(Produto.nome)))[0]['nome'], 21)
+    
+    def test_replace_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(freplace(Produto.nome, 'p', 'b'), \
+            ' Limbador de barabrisa ')).values(freplace(Produto.nome, 'p', 'b'))[0]['nome'], \
+            ' Limbador de barabrisa ')
+    
+    def test_instr_filter(self):
+        self.assertEqual(select(Produto).filter(
+            oequ(Produto.nome, ' Limpador de parabrisa '),
+            oequ(finstr(Produto.nome, 'L'), 2)
+        ).values(finstr(Produto.nome, 'L'))[0]['nome'], 2)
+
+    def test_rpad_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(frpad(Produto.nome, '0', 13), 'Pneu aro 1500')).values(frpad(Produto.nome, '0', 13))[0]['nome'], 'Pneu aro 1500')
+
+    def test_lpad_filter(self):
+        self.assertEqual(select(Produto).filter(oequ(flpad(Produto.nome, '0', 13), '00Pneu aro 15')).values(flpad(Produto.nome, '0', 13))[0]['nome'], '00Pneu aro 15')
+
 
 if __name__ == '__main__':
     unittest.main()

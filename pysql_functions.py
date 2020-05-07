@@ -110,6 +110,14 @@ def finstr(field, substring, alias = ''):
     text_function = PySqlClassGenerator.get_sql_functions_config_class().finstr(temp_substring)
     return field.get_field_configureted_for_functions(text_function, alias, False)
 
+def fconcat(*fields, alias = ''):
+    raise Exception('fconcat is not implemented.')
 
-def fconcat(field, alias = ''):
-    pass
+def frpad(field, complete_with, size, alias = ''):
+    text_function = PySqlClassGenerator.get_sql_functions_config_class().frpad(complete_with, size)
+    return field.get_field_configureted_for_functions(text_function, alias, False)
+
+
+def flpad(field, complete_with, size, alias = ''):
+    text_function = PySqlClassGenerator.get_sql_functions_config_class().flpad(complete_with, size)
+    return field.get_field_configureted_for_functions(text_function, alias, False)

@@ -61,6 +61,15 @@ class PysqlFunctionsConfig(object):
     @staticmethod
     def fconcat():
         return ''
+    
+    @staticmethod
+    def frpad(complete_with, size):
+        return "RPAD({field}, {size}, '{complete_with}' )".format(size=size, complete_with=complete_with, field='{field}')
+
+    @staticmethod
+    def flpad(complete_with, size):
+        return "LPAD({field}, {size}, '{complete_with}' )".format(size=size, complete_with=complete_with, field='{field}')
+
 
 class PysqlFunctionsConfigPostgre(PysqlFunctionsConfig):
     pass
