@@ -103,4 +103,21 @@ class PysqlFunctionsConfigSqlite(PysqlFunctionsConfig):
     @staticmethod
     def frtrim(character): 
         return 'RTRIM({field}, {character})'.format(character=character, field='{field}')
-    
+
+    @staticmethod
+    def frpad(complete_with, size):
+        str_to_add = ''
+        for a in range(0, size):
+            str_to_add += complete_with
+        
+        return "{field} || SUBSTR('{complete_with}', 1, {size} - LENGTH({field}) ) ".format(complete_with=str_to_add, field='{field}', size=size)
+        
+
+    @staticmethod
+    def flpad(complete_with, size):
+        str_to_add = ''
+        for a in range(0, size):
+            str_to_add += complete_with
+        
+        return "SUBSTR('{complete_with}', 1, {size} - LENGTH({field}) ) || {field} ".format(complete_with=str_to_add, field='{field}', size=size)
+
