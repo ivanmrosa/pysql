@@ -1,7 +1,7 @@
-from db_types import Field
-from field_tools import FieldTools
-from pysql_class_generator import PySqlClassGenerator
-from interface import PySqlDistinctClause
+from . db_types import Field
+from . field_tools import FieldTools
+from . pysql_class_generator import PySqlClassGenerator
+from . interface import PySqlDistinctClause
 import inspect
 
 class DistinctType(PySqlDistinctClause):

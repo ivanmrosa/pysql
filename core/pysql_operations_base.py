@@ -1,5 +1,5 @@
-from interface import PySqlOperatorsInterface, PySqlCommandInterface
-from field_tools import FieldTools
+from . interface import PySqlOperatorsInterface, PySqlCommandInterface
+from . field_tools import FieldTools
 import inspect
 
 

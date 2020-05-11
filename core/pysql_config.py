@@ -18,28 +18,28 @@ SQLSERVER = 'SQLSERVER'
 SQLITE = 'SQLITE'
 
 
-from pysql_db_tables_definitions import PostgreDbTable, OracleDbTable, MySqlDbTable, SqlServerDbTable, SqliteDbTable
+from . pysql_db_tables_definitions import PostgreDbTable, OracleDbTable, MySqlDbTable, SqlServerDbTable, SqliteDbTable
 
-from pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, GenericOnullPostgre, GenericOorPostgre, GenericOinPostgre, \
+from . pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, GenericOnullPostgre, GenericOorPostgre, GenericOinPostgre, \
     GenericOninPostgre, GenericOlikePostgre, GenericOnlikePostgre, GenericOnnullPostgre, GenericObtPostgre, GenericOltPostgre, \
     GenericOexPostgre, GenericOnexPostgre,  GenericOequSqlite, GenericOdifSqlite, GenericOnullSqlite, GenericOorSqlite, GenericOinSqlite, \
     GenericOninSqlite, GenericOlikeSqlite, GenericOnlikeSqlite, GenericOnnullSqlite, GenericObtSqlite, GenericOltSqlite, \
     GenericOexSqlite, GenericOnexSqlite
 
-from pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
+from . pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
     GenericBaseDmlSelectSqlServer,  GenericBaseDmlSelectSqlite,  GenericBaseDmlInsertPostgre, GenericBaseDmlUpdatePostgre, GenericBaseDmlUpdateMySql, \
     GenericBaseDmlUpdateOracle, GenericBaseDmlUpdateSqlServer, GenericBaseDmlInsertSqlite, GenericBaseDmlUpdateSqlite, GenericBaseDmlDeletePostgre, GenericBaseDmlDeleteMySql, \
     GenericBaseDmlDeleteOracle, GenericBaseDmlDeleteSqlServer, GenericBaseDmlDeleteSqlite
 
-from pysql_functions_config import PysqlFunctionsConfigPostgre, PysqlFunctionsConfigOracle, PysqlFunctionsConfigSqlServer, PysqlFunctionsConfigMySql, PysqlFunctionsConfigSqlite
+from . pysql_functions_config import PysqlFunctionsConfigPostgre, PysqlFunctionsConfigOracle, PysqlFunctionsConfigSqlServer, PysqlFunctionsConfigMySql, PysqlFunctionsConfigSqlite
 
 script_executor_class = None
 
 if DB_DRIVER == POSTGRESQL:
-    from db_script_executor_postgre import PostgreScriptExecutor
+    from . db_script_executor_postgre import PostgreScriptExecutor
     script_executor_class = PostgreScriptExecutor
 elif DB_DRIVER == SQLITE:
-    from db_script_executor_sqlite import SqliteScriptExecutor
+    from . db_script_executor_sqlite import SqliteScriptExecutor
     script_executor_class = SqliteScriptExecutor
 
 

@@ -1,9 +1,9 @@
-from sql_db_tables import BaseDbTable
+from core.sql_db_tables import BaseDbTable
 from test.models.fonte_de_anuncio import FonteDeAnuncio
 from test.models.modelo_veiculo import ModeloVeiculo
 from test.models.marca_veiculo import MarcaVeiculo
 from test.models.cidade import Cidade
-from db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue, DateField, CurrentDate
+from core.db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue, DateField, CurrentDate
 
 CAMBIO_AUTOMATICO = 'A'
 CAMBIO_MANUAL = 'M'

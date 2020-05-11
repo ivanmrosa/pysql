@@ -1,6 +1,6 @@
-from sql_db_tables import BaseDbTable
+from core.sql_db_tables import BaseDbTable
 from test.models.marca_fipe import MarcaFipe
-from db_types import VarcharField, IntegerPrimaryKey, ForeignKey, IntegerField
+from core.db_types import VarcharField, IntegerPrimaryKey, ForeignKey, IntegerField
 class ModeloFipe(BaseDbTable):
     id = IntegerPrimaryKey()
     marca_fipe = ForeignKey(related_to_class=MarcaFipe, nullable=False)

@@ -1,9 +1,9 @@
 import unittest, os
-from pysql_config import DB_DRIVER
-from sql_db_tables import BaseDbTable
-from sql_operators import *
-from pysql_command import select, insert, update, delete
-from pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
+from core.pysql_config import DB_DRIVER
+from core.sql_db_tables import BaseDbTable
+from core.sql_operators import *
+from core.pysql_command import select, insert, update, delete
+from core.pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
     fconcat, fdistinct, fconcat, frpad, flpad
 from test.models.cidade import Cidade
 from test.models.estado import Estado
@@ -11,8 +11,8 @@ from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
 from test.models.modelo_veiculo import ModeloVeiculo
 from test.models.mercadoria import Produto, Venda
-from pysql_setup import manage_db
-from db_types import NullValue
+from setup.pysql_setup import manage_db
+from core.db_types import NullValue
 
 
 def recreate_db():
@@ -219,7 +219,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
        
     def test_simple_sql(self):
         paises = select(Pais).values()
-        self.assertEqual(paises[0][1], 'Brasil')
+        self.assertEqual(paises[0][2], 'Brasil')
     
     def test_sql_with_simple_join(self):
 

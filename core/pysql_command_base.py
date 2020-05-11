@@ -1,8 +1,8 @@
-from field_tools import FieldTools
+from . field_tools import FieldTools
 #from sql_db_tables import BaseDbTable 
-from interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface, PySqlDistinctClause
+from . interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySqlFieldInterface, PySqlDistinctClause
 import inspect
-from friendly_data import FriendlyData
+from . friendly_data import FriendlyData
 
 #from pysql_command import update
 #from sql_operators import oequ

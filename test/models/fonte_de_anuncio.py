@@ -1,5 +1,5 @@
-from sql_db_tables import BaseDbTable
-from db_types import IntegerPrimaryKey, VarcharField
+from core.sql_db_tables import BaseDbTable
+from core.db_types import IntegerPrimaryKey, VarcharField
 
 class FonteDeAnuncio(BaseDbTable):   
     id = IntegerPrimaryKey()

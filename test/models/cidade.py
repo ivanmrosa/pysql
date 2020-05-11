@@ -1,5 +1,5 @@
-from sql_db_tables import BaseDbTable
-from db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField, IntegerPrimaryKey
+from core.sql_db_tables import BaseDbTable
+from core.db_types import ForeignKey, IntegerField, VarcharField, MoneyField, CharacterField, IntegerPrimaryKey
 from test.models.estado import Estado
 
 class Cidade(BaseDbTable):

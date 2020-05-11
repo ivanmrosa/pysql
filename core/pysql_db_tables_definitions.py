@@ -1,4 +1,4 @@
-from interface import PySqlDatabaseTableInterface
+from . interface import PySqlDatabaseTableInterface
 #from db_types import  
 #from db_types import ForeignKey
 import inspect
@@ -36,15 +36,18 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         
     @classmethod
     def get_fields(cls):
-        attributes = cls.__dict__
+        attributes = inspect.getmembers(cls) #cls.__dict__
         fields = []
-        for attr in attributes.keys():
-            item = attributes.__getitem__(attr)
+        for attr in attributes:
+            name = attr[0]
+            item = attr[1]
+            #item = attributes.__getitem__(attr)
             #if not inspect.isroutine(item) and inspect.isclass(type(item)):
-            if not(attr.startswith('__') and attr.endswith('__')) and getattr(item, '_Field__is_db_field', False):
-                fields.append(item)
+            if not inspect.isroutine(item):
+                if not(name.startswith('__') and name.endswith('__')) and getattr(item, '_Field__is_db_field', False):
+                    fields.append(item)
         return fields
-    
+
     @classmethod    
     def get_field_by_db_name(cls, name):
         fields = cls.get_fields()

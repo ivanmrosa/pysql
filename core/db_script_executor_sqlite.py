@@ -1,5 +1,5 @@
 import os, sqlite3
-from interface import PySqlRunScriptInterface
+from . interface import PySqlRunScriptInterface
 
 
 class SqliteScriptExecutor(PySqlRunScriptInterface):

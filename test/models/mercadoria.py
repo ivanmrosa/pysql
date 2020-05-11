@@ -1,5 +1,5 @@
-from sql_db_tables import BaseDbTable
-from db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue, DateField, CurrentDate, \
+from core.sql_db_tables import BaseDbTable
+from core.db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue, DateField, CurrentDate, \
     FloatField
 
 class Produto(BaseDbTable):

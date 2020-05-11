@@ -1,4 +1,4 @@
-from pysql_config import DRIVER_CLASSES_CONFIG as driver_config, DB_DRIVER, USERNAME, DATABASENAME, PASSWORD, HOST, PORT
+from . pysql_config import DRIVER_CLASSES_CONFIG as driver_config, DB_DRIVER, USERNAME, DATABASENAME, PASSWORD, HOST, PORT
 import inspect
 
 class PySqlClassGenerator(object):

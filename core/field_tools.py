@@ -1,5 +1,5 @@
 import inspect
-from interface import PySqlFieldInterface
+from . interface import PySqlFieldInterface
 
 
 class FieldTools(object):

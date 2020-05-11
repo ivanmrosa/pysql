@@ -1,5 +1,5 @@
-from pysql_config import DB_DRIVER, DRIVER_CLASSES_CONFIG
-from interface import PySqlFieldInterface
+from . pysql_config import DB_DRIVER, DRIVER_CLASSES_CONFIG
+from . interface import PySqlFieldInterface
 import inspect 
 from copy import deepcopy
 

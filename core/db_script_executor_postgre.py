@@ -1,5 +1,5 @@
 #from pysql_config import DB_DRIVER, POSTGRESQL, ORACLE, MYSQL, SQLSERVER, HOST, DATABASENAME, PASSWORD, USERNAME
-from interface import PySqlRunScriptInterface
+from . interface import PySqlRunScriptInterface
 
 #if DB_DRIVER == POSTGRESQL:
 import psycopg2

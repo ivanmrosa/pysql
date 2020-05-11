@@ -1,5 +1,5 @@
-from sql_db_tables import BaseDbTable
-from db_types import VarcharField, IntegerPrimaryKey, ForeignKey
+from core.sql_db_tables import BaseDbTable
+from core.db_types import VarcharField, IntegerPrimaryKey, ForeignKey
 from test.models.marca_fipe import MarcaFipe
 from test.models.fonte_de_anuncio import FonteDeAnuncio
 
