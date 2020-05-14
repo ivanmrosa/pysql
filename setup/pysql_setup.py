@@ -1,7 +1,12 @@
 import os, sys, pkgutil, json, inspect, shutil
 from importlib import import_module
-from core.interface import PySqlDatabaseTableInterface
-from core.pysql_class_generator import PySqlClassGenerator
+try:
+    from core.interface import PySqlDatabaseTableInterface
+    from core.pysql_class_generator import PySqlClassGenerator
+except: #fucking problems to integrate in other project
+    from pysql.core.interface import PySqlDatabaseTableInterface
+    from pysql.core.pysql_class_generator import PySqlClassGenerator
+
 
 #BASE_DIR = os.getcwd()
 #MODEL_DIR = os.path.join(BASE_DIR, 'models')
