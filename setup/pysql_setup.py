@@ -37,7 +37,7 @@ def get_list_of_tables(models_directory, models_package):
                 class_model = getattr(imported_module, class_name)
 
                 if inspect.isclass(class_model) and issubclass(class_model, PySqlDatabaseTableInterface) and not class_model in list_of_tables:
-                    if not (hasattr(class_model, 'Abstract') and getattr(class_model, 'Abstract') == True):
+                    if not ('Abstract' in class_model.__dict__ and getattr(class_model, 'Abstract') == True):
                         list_of_tables.append(class_model)
         except:
             print(class_model)
