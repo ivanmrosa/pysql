@@ -70,4 +70,20 @@ class FriendlyData(object):
             self.current += 1
             self.friendly_row.row = self.data[self.current - 1]
             return self.friendly_row
-            
+    
+    def as_dict_list(self):
+        result = []
+        for r in self.data:
+            self.friendly_row.row = r
+            result.append(self.friendly_row.convert_row_to_dict())
+        
+        return result
+    
+    def get_first(self):
+        result = {}
+        if len(self.data) > 0:
+            self.friendly_row.row = self.data[0]
+            result = self.friendly_row.convert_row_to_dict()
+        
+        return result
+
