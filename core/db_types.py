@@ -62,6 +62,9 @@ class Field(PySqlFieldInterface):
     def get_owner(self):
         return self.__owner
         
+    def set_owner(self, owner):
+        self.__owner = owner
+
     def __set_name__(self, owner, name):
         self.__owner = owner
     
