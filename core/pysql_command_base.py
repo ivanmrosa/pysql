@@ -143,7 +143,7 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                     self.all_fields.append(field[0])
                     if field[0].is_used_in_aggregated_function():
                         self.aggregated_fields.append(field[0])
-                    str_fields += field[0].get_sql_for_field() + ' ' + field[1] + ', '
+                    str_fields += field[0].get_sql_for_field(use_alias = False) + ' ' + field[1] + ', '
                 elif is_db_table:                                        
                     str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
                     for f in field.get_fields():

@@ -37,8 +37,9 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return copy
         
     @classmethod
-    def get_fields(cls):
-        attributes = inspect.getmembers(cls) #cls.__dict__
+    def get_fields(cls):        
+
+        attributes =  inspect.getmembers(cls) #cls.__dict__
         fields = []
         for attr in attributes:
             name = attr[0]
@@ -48,7 +49,9 @@ class GenericDbTable(PySqlDatabaseTableInterface):
             if not inspect.isroutine(item):
                 if not(name.startswith('__') and name.endswith('__')) and getattr(item, '_Field__is_db_field', False):
                     fields.append(item)
-        return fields
+        fields.sort(key=lambda field : field._order)
+        return  fields
+        
 
     @classmethod    
     def get_field_by_db_name(cls, name):

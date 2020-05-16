@@ -9,7 +9,7 @@ class GenricBaseOperator(object):
 
     def get_value_or_field_name(self, value_or_field, quoted=False, value_as_parameter=False, list_of_parameters=[]):
         if FieldTools.is_db_field(value_or_field):
-            return value_or_field.get_sql_for_field() #value_or_field.get_owner().get_alias() + '.' + value_or_field.get_db_name()
+            return value_or_field.get_sql_for_field(use_alias=False) #value_or_field.get_owner().get_alias() + '.' + value_or_field.get_db_name()
         else:
             if value_as_parameter:
                 list_of_parameters.append(value_or_field)
@@ -97,7 +97,7 @@ class GenericOin(PySqlOperatorsInterface, GenricBaseOperator):
     def get_sql_text(self, value_as_parameter=False, list_of_parameters=[]):
         is_a_command_class = False
 
-        sql = '{table_field} {operator} ('.format(table_field=self.field_to_filter.get_sql_for_field(), operator=self.get_operator())
+        sql = '{table_field} {operator} ('.format(table_field=self.field_to_filter.get_sql_for_field(use_alias = False), operator=self.get_operator())
 
         for param in self.params_to_filter:
 

@@ -1,5 +1,5 @@
 {
-    "driver":"SQLITE",
+    "driver":"POSTGRESQL",
     "host":"localhost",
     "port":"5432",
     "databasename":"pysqltest",

@@ -2,6 +2,7 @@ from abc import ABC
 
 class PySqlFieldInterface(ABC):
     _property_name = ''
+    _order = 0
     def get_db_name(self):
         pass
     
@@ -17,15 +18,20 @@ class PySqlFieldInterface(ABC):
 class MetaDbTable(type):
     def __init__(self, name, bases, attr_dict):
         super().__init__(name , bases , attr_dict)
-        for key, attr in attr_dict.items():
+        order = 0
+        for key, attr in attr_dict.items():            
             if isinstance(attr, PySqlFieldInterface):
                 attr.set_owner(self)
                 attr._property_name = key
+                attr._order = order
                 if not attr.get_db_name():
                     attr.set_db_name(key)
+                order += 1
+                                
+                   
                 
                             
-class PySqlDatabaseTableInterface(metaclass=MetaDbTable):
+class PySqlDatabaseTableInterface(metaclass=MetaDbTable):    
     def get_alias(self):
         pass
     def set_alias(self):

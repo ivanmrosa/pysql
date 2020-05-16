@@ -154,11 +154,14 @@ class Field(PySqlFieldInterface):
                 text = self.__temporary_text_function.format(field=standard_text) + ' '
             else:
                 text = self.__temporary_text_function
-
+            
             if use_alias:
-                text += self.__temporary_alias + ' '
+                text += ' ' + self.get_alias()
         else:        
-            text = standard_text
+            text = standard_text       
+            if use_alias and self.get_alias() != self.get_db_name():
+                text += ' ' + self.get_alias()
+        
         self.__temporary_alias = ''
         self.__temporary_text_function = ''
         return text 
