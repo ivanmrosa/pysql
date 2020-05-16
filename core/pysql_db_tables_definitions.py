@@ -3,7 +3,9 @@ from . interface import PySqlDatabaseTableInterface
 #from db_types import ForeignKey
 import inspect
 
+
 class GenericDbTable(PySqlDatabaseTableInterface):
+    
     __alias = None
     __db_name = None
     __pk_fields = ()
@@ -205,7 +207,8 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         fields = cls.get_fields()
         for field in fields:
             field.value = None
-       
+
+
 class PostgreDbTable(GenericDbTable):
     pass
 

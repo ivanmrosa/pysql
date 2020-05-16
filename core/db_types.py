@@ -14,7 +14,7 @@ class CurrentDate(object):
 class Field(PySqlFieldInterface):
     __is_db_field = True
     __owner = None
-    def __init__(self, db_name, nullable = True, index = False, primary_key = False, \
+    def __init__(self, db_name = '', nullable = True, index = False, primary_key = False, \
         unique = False, size=0, scale = 0, precision=0, default=None, permitted_values=()):
         
         self._index = index
@@ -34,15 +34,23 @@ class Field(PySqlFieldInterface):
         self.__temporary_text_function = ''
         self.__used_in_aggregated_function = False
         self.__is_deep_copy = False
+
+        self._property_name = ''
     
     def get_db_name(self):
         return self._db_name
     
+    def set_db_name(self, db_name):
+        self._db_name = db_name
+    
     def get_alias(self):
         if self.__temporary_alias:
             return self.__temporary_alias
-        else:
-            return self._db_name
+        else:     
+            if self._property_name and self._property_name != self._db_name:
+                return self._property_name
+            else:
+                return self._db_name
     
     def get_generic_type_name(self):
         return type(self).__name__
@@ -217,7 +225,7 @@ class ForeignKey(Field):
         
         
 class IntegerField(Field):
-    def __init__(self, db_name, nullable = True, index = False, primary_key = False, \
+    def __init__(self, db_name = '', nullable = True, index = False, primary_key = False, \
         unique = False, size=0, scale = 0, precision=0, default=None, permitted_values=()):
         super(IntegerField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
         nullable=nullable, default=default, permitted_values=permitted_values)   
@@ -239,7 +247,7 @@ class FloatField(Field):
     pass
 
 class CharacterField(Field):
-    def __init__(self, db_name, size, index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
+    def __init__(self, size, db_name = '', index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
         super(CharacterField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
             size = size, nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)   
         self._value_is_string = True     
@@ -256,7 +264,7 @@ class IntegerPrimaryKey(IntegerField):
 
 
 class DateField(Field):
-    def __init__(self, db_name, index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
+    def __init__(self, db_name = '', index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
         super(DateField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
             size=0 , nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)   
     

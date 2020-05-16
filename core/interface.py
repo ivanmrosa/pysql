@@ -1,6 +1,31 @@
 from abc import ABC
 
-class PySqlDatabaseTableInterface(ABC):
+class PySqlFieldInterface(ABC):
+    _property_name = ''
+    def get_db_name(self):
+        pass
+    
+    def get_script(self):
+        pass
+
+    def set_owner(self, owner):
+        pass
+   
+    def set_db_name(self, db_name):
+        pass
+
+class MetaDbTable(type):
+    def __init__(self, name, bases, attr_dict):
+        super().__init__(name , bases , attr_dict)
+        for key, attr in attr_dict.items():
+            if isinstance(attr, PySqlFieldInterface):
+                attr.set_owner(self)
+                attr._property_name = key
+                if not attr.get_db_name():
+                    attr.set_db_name(key)
+                
+                            
+class PySqlDatabaseTableInterface(metaclass=MetaDbTable):
     def get_alias(self):
         pass
     def set_alias(self):
@@ -13,14 +38,6 @@ class PySqlOperatorsInterface(ABC):
     def get_sql_text(self, value_as_paremeter = False, list_of_parameters = []):
         pass
 
-
-class PySqlFieldInterface(ABC):
-    
-    def get_db_name(self):
-        pass
-    
-    def get_script(self):
-        pass
 
 class PySqlRunScriptInterface(ABC):
     
