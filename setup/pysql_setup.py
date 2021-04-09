@@ -61,7 +61,7 @@ def get_table_saved_structure(class_to_get, model_backup_directory):
     
     return table_data
 
-def save_table_estructure(class_to_save, model_backup_directory):
+def save_table_structure(class_to_save, model_backup_directory):
     if os.path.exists(os.path.join(model_backup_directory, class_to_save.__name__ + '.json')):
         os.rename(os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), 
             os.path.join(model_backup_directory, class_to_save.__name__ + '_old.json'))
@@ -115,8 +115,17 @@ def create_tables(list_of_tables, model_backup_directory):
         
         if not table_data:
             many_to_many_fields = table.get_many_to_many_fields()
+            fks = []
             for field in many_to_many_fields:
                 executor.execute_ddl_script(field.get_script())
+                executor.execute_ddl_script(field.get_middle_class().get_script_create_pk(False)[1]) 
+                fks = field.get_middle_class().get_scripts_fk(False)
+                for fk in fks:                    
+                    executor.execute_ddl_script(fk[1])
+                
+                indexes = field.get_middle_class().get_scripts_indices(False)
+                for index in indexes:
+                    executor.execute_ddl_script(index[1])
         
                 
         if table_data:
@@ -148,10 +157,12 @@ def create_tables(list_of_tables, model_backup_directory):
         for fk_script in table.get_scripts_fk(False):
             if not table_data or not fk_script[0] in table_data["foreign_key"]:                
                 executor.execute_ddl_script(fk_script[1])
+        
+        #executor.execute_ddl_script(field.get_script())
     
     executor.commit()
     for table in list_of_tables:
-        save_table_estructure(table, model_backup_directory)
+        save_table_structure(table, model_backup_directory)
 
 
 def create_database(models_directory, model_backup_directory, package):
