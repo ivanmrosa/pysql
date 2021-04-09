@@ -1,4 +1,8 @@
 from . pysql_class_generator import PySqlClassGenerator
+from . sql_operators import oequ
+from . pysql_functions import fmax
+from . interface import PySqlDatabaseTableInterface, PySqlFieldInterface
+import inspect
 
 
 def select(table):
@@ -17,11 +21,25 @@ def update(table):
 def insert(table):
     insert_object = PySqlClassGenerator.get_command_insert_object()
     insert_object.table = table
+    insert_object.select_executor = select
+    insert_object.oequ_clause = oequ
+    insert_object.max_func = fmax
     return insert_object
 
 def delete(table):
-    delete_object = PySqlClassGenerator.get_command_delete_object()
-    delete_object.add_operation('DELETE', table)
-    delete_object.table = table
-    return delete_object
+    if inspect.isclass(table) and issubclass(table, PySqlDatabaseTableInterface):
+        delete_object = PySqlClassGenerator.get_command_delete_object()
+        delete_object.add_operation('DELETE', table)
+        delete_object.table = table
+        return delete_object
+    else:
+        if issubclass(type(table), PySqlFieldInterface) and table.is_many_to_many():
+
+            delete_object = PySqlClassGenerator.get_command_delete_object()
+            #table.set_alias(table.get_middle_class().get_db_name() + '_2')
+            delete_object.add_operation('DELETE', table.get_middle_class())
+            delete_object.table = table.get_middle_class()         
+            return delete_object.join(table.get_owner()).join(table.get_related_to_class(), table.get_middle_class())            
+        else:
+            raise Exception('Not a valid class given.')
 

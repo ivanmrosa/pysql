@@ -2,6 +2,7 @@ from . pysql_config import DB_DRIVER, DRIVER_CLASSES_CONFIG
 from . interface import PySqlFieldInterface
 import inspect 
 from copy import deepcopy
+import datetime
 
 
 class NullValue(object):
@@ -65,6 +66,9 @@ class Field(PySqlFieldInterface):
         return self._index
 
     def is_foreign_key(self):
+        return False
+    
+    def is_many_to_many(self):
         return False
     
     def get_owner(self):
@@ -174,6 +178,12 @@ class Field(PySqlFieldInterface):
     def value(self, val):
         self._value = val
 
+    #def __get__(self, instance, owner):
+    #    return self._value
+    
+    #def __set__(self, instance, value):
+    #    self._value = value
+
 
 
 class ForeignKey(Field):
@@ -225,7 +235,66 @@ class ForeignKey(Field):
 
     def is_foreign_key(self):
         return True
+
+
+class ManyToManyField(Field):
+    
+    def __init__(self, related_to_class, unique=False, db_name='', nullable=True):
+        super(ManyToManyField, self).__init__(db_name=db_name, nullable=nullable, index=False, primary_key=False, unique=unique)
+        self.__related_to_class = related_to_class        
+        self.__many_to_many_table = None
         
+        
+    def add(self, pk_related_class):
+        self.value.append(pk_related_class)
+    
+    def get_related_class(self):
+        return self.__related_to_class
+
+    def get_related_to_class(self):
+        return self.__related_to_class
+
+    def get_db_name(self):               
+        return 'mtm_' + self.get_owner().get_db_name() + '_' + self.__related_to_class.get_db_name()
+    
+    def get_middle_class(self):
+        if self.__many_to_many_table:
+            return self.__many_to_many_table
+
+        pk_fields = self.__related_to_class.get_pk_fields()
+        pk_fields_this_class = self.get_owner().get_pk_fields()
+        related_table_name = self.__related_to_class.get_db_name()        
+
+        if len(pk_fields) != 1 or len(pk_fields_this_class) != 1:
+            raise Exception('Impossible to create a many to many field for ' + self.get_alias() + 
+            ' to relate with ' + related_table_name + '. Too many primary key fields or no primary key found')
+
+        fields = {"id": IntegerPrimaryKey()}        
+        fields.update({pk_fields_this_class[0].get_alias() + '_' + self.get_owner().get_alias(): ForeignKey(self.get_owner()) })        
+        fields.update({pk_fields[0].get_alias() + '_' + pk_fields[0].get_owner().get_alias(): ForeignKey(pk_fields[0].get_owner()) })
+        
+        
+        self.__many_to_many_table = type(self.get_db_name(), (DRIVER_CLASSES_CONFIG[DB_DRIVER]['DB_TABLE_CLASS'], ), fields)
+        return self.__many_to_many_table
+                
+
+    def get_script(self):
+        return self.get_middle_class().get_script_create_table()      
+        
+    
+    def get_generic_type_name(self):
+        field_type = type(self.__related_to_class.get_pk_fields()[0])
+
+        if issubclass(field_type, IntegerPrimaryKey):
+            return IntegerField.__name__
+        else:
+            return field_type.__name__
+    
+    def set_alias(self, alias):
+        self.get_middle_class().set_alias(alias)
+
+    def is_many_to_many(self):
+        return True
         
 class IntegerField(Field):
     def __init__(self, db_name = '', nullable = True, index = False, primary_key = False, \
@@ -269,8 +338,44 @@ class IntegerPrimaryKey(IntegerField):
 class DateField(Field):
     def __init__(self, db_name = '', index = False, primary_key = False, unique = False, nullable = True, default=None, permitted_values=()):
         super(DateField, self).__init__(index=index, db_name=db_name, primary_key=primary_key, unique=unique, 
-            size=0 , nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)   
+            size=0 , nullable=nullable, default=default, permitted_values=permitted_values, precision=0, scale=0)
+    
+    @property
+    def value(self):
+        if self._value:
+            return datetime.datetime.fromisoformat(self._value)    
+        else:
+            return self._value    
+    
+    @value.setter
+    def value(self, val):
+        
+        if type(val) in (datetime.datetime, datetime.date):
+            self._value = datetime.date(val.year, val.month, val.day).isoformat()
+        else:
+            if not val:
+                self._value = val
+            else:
+                raise Exception('Date must be a valid python date object')
     
 
 class DateTimeField(DateField):
-    pass
+    @property
+    def value(self):
+        if self._value:
+            return datetime.datetime.fromisoformat(self._value)    
+        else:
+            return self._value 
+       
+    @value.setter
+    def value(self, val):
+        
+        if type(val) in (datetime.datetime, datetime.date) :
+            self._value = val.isoformat()
+        else:
+            if not val:
+                self._value = val
+            else:
+                raise Exception('Date must be a valid python date object')
+
+

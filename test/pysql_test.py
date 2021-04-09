@@ -10,9 +10,11 @@ from test.models.estado import Estado
 from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
 from test.models.modelo_veiculo import ModeloVeiculo
-from test.models.mercadoria import Produto, Venda
+from test.models.mercadoria import Produto, Venda, VendaMultipla
 from setup.pysql_setup import manage_db
 from core.db_types import NullValue
+import datetime
+
 
 
 def recreate_db():
@@ -410,7 +412,71 @@ class TestExecutionOnDataBase(unittest.TestCase):
         delete(Estado).join(Pais).filter(*filtro).run()
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
         self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)
-         
+
+class TestManyToManyField(unittest.TestCase):
+    def setUp(self):
+        recreate_db()
+        Produto.clear()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
+        
+        Produto.clear()
+        Produto.nome.value = ' Limpador de parabrisa '
+        Produto.categoria.value = 'ZZZZ'
+        Produto.valor_unitario.value = 0
+        insert(Produto).run()
+
+    def test_insert(self):
+        get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
+        VendaMultipla.clear()
+        VendaMultipla.data_venda.value = datetime.datetime.now()
+        VendaMultipla.produtos.add(get_id_produto('Roda de aço aro 13'))
+        VendaMultipla.produtos.add(get_id_produto('Pneu aro 13'))
+        insert(VendaMultipla).run()
+
+        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
+        
+        self.assertEqual(len(vendas_produto), 2)
+
+    def test_delete(self):
+        get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
+        VendaMultipla.clear()
+        VendaMultipla.data_venda.value = datetime.datetime.now()
+        VendaMultipla.produtos.add(get_id_produto('Roda de aço aro 13'))
+        VendaMultipla.produtos.add(get_id_produto('Pneu aro 13'))
+        insert(VendaMultipla).run()
+
+        delete(VendaMultipla.produtos).filter(oequ(Produto.nome, 'Roda de aço aro 13')).run()
+
+        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
+        
+        self.assertEqual(len(vendas_produto), 1)
+        
+        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
+        self.assertEqual(vendas_produto[0]["nome"], 'Pneu aro 13')
+        
+
 class TestStandardFunctions(unittest.TestCase):
     def setUp(self):
         recreate_db()

@@ -1,6 +1,6 @@
 from core.sql_db_tables import BaseDbTable
 from core.db_types import IntegerPrimaryKey, VarcharField, TextField, ForeignKey, IntegerField, NumericField, CharacterField, NullValue, DateField, CurrentDate, \
-    FloatField
+    FloatField, ManyToManyField
 
 class Produto(BaseDbTable):
     id = IntegerPrimaryKey()
@@ -10,5 +10,11 @@ class Produto(BaseDbTable):
 
 class Venda(BaseDbTable):
     id = IntegerPrimaryKey()
-    produto = ForeignKey(Produto)
+    produto = ForeignKey(Produto, nullable=True)
     quantidade = IntegerField(db_name='quantidade')
+
+class VendaMultipla(BaseDbTable):
+    id = IntegerPrimaryKey()
+    data_venda = DateField()
+    cancelada = CharacterField(size=1, permitted_values=('T', 'F'), default='F')
+    produtos = ManyToManyField(related_to_class=Produto)

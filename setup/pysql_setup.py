@@ -111,9 +111,14 @@ def create_tables(list_of_tables, model_backup_directory):
             executor.execute_ddl_script(table.get_script_create_table())
         
         if not table_data or not table_data["primary_key"]:            
-            executor.execute_ddl_script(table.get_script_create_pk(False)[1])        
+            executor.execute_ddl_script(table.get_script_create_pk(False)[1])    
         
+        if not table_data:
+            many_to_many_fields = table.get_many_to_many_fields()
+            for field in many_to_many_fields:
+                executor.execute_ddl_script(field.get_script())
         
+                
         if table_data:
             old_fields = table_data["fields"]
             fields = table.get_fields()
@@ -139,8 +144,7 @@ def create_tables(list_of_tables, model_backup_directory):
     for table in list_of_tables:
         table_data = None
         table_data = get_table_saved_structure(table, model_backup_directory)
-        
-        
+                                
         for fk_script in table.get_scripts_fk(False):
             if not table_data or not fk_script[0] in table_data["foreign_key"]:                
                 executor.execute_ddl_script(fk_script[1])

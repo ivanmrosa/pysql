@@ -4,6 +4,7 @@ from . interface import PySqlDatabaseTableInterface, PySqlCommandInterface, PySq
 import inspect
 from . friendly_data import FriendlyData
 
+
 #from pysql_command import update
 #from sql_operators import oequ
 
@@ -29,7 +30,7 @@ class GenricBaseDmlScripts(DmlBase):
         
     def add_base_join(self, table):
         self.script_from += ' JOIN {table} {alias} ON '.format(table=table.get_db_name(), alias=table.get_alias())
-    
+            
     def add_script_used_for_join_filter(self, script, first_filter):
         self.script_from += script
 
@@ -49,12 +50,15 @@ class GenricBaseDmlScripts(DmlBase):
     def end_operation_add_join(self, table):
         self.script_from = self.script_from.strip()
         self.add_operation('JOIN', table)
-
+   
     
     def join(self, table, table_to_relate=None, tuple_fields_comparations = ()):        
+        old_from_script = self.script_from
         self.add_base_join(table)
         if len(tuple_fields_comparations) == 0:
+            
             if len(self.list_operations) > 0:                
+                
                 prior_table = table_to_relate if table_to_relate else self.list_operations[-1:][0]["table"]
                 fk_fields = table.get_fk_fields()
 
@@ -71,7 +75,27 @@ class GenricBaseDmlScripts(DmlBase):
                         if issubclass(fk_field.get_related_to_class(), table):
                             self.add_base_filter_join_using_fk(table, prior_table, 
                                 fk_field.get_related_to_class().get_pk_fields()[0], fk_field, count==0)
-                            count += 1        
+                            count += 1
+
+                if count == 0:
+                    self.script_from = old_from_script
+                    fk_fields = table.get_many_to_many_fields()
+                    for fk_field in fk_fields:
+                        if issubclass(fk_field.get_related_to_class(), table):
+                            #self.join(table, fk_field.get_middle_class())
+                            self.join(fk_field.get_middle_class())                            
+                            self.join(fk_field.get_related_to_class())
+                            count += 1
+                    
+                    if count == 0:
+                        fk_fields = prior_table.get_many_to_many_fields()
+                        for fk_field in fk_fields:
+                            if issubclass(fk_field.get_related_to_class(), table):
+                                self.join(fk_field.get_middle_class())                            
+                                self.join(fk_field.get_related_to_class())
+
+                                count += 1
+                              
             else:
                 raise Exception('Join must be preceded for an operator update or select')
         else:
@@ -227,25 +251,57 @@ class GenericBaseDmlInsertUpdate(DmlBase):
         return ''
 
 class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
-    
+    select_executor = None
+    oequ_clause = None
+    max_func = None
+    _many_to_many_insert = ()
 
     def get_script(self):
-        if issubclass(self.table, PySqlDatabaseTableInterface):            
+        self._many_to_many_insert = ()
+        if issubclass(self.table, PySqlDatabaseTableInterface):                        
             self.params = ()        
+
             script_fields = 'INSERT INTO ' + self.table.get_db_name() + '('
             script_values = 'VALUES('
             fields = self.table.get_fields() 
             for field in fields:
-                if field.value != None:
-                    self.params += (field.value, )
-                    script_fields += field.get_db_name() + ', '
-                    script_values += '{param}, '.format(param=self.get_param_representation())
+                if not field.is_many_to_many():
+                    if (field.value != None):
+                        self.params += (field.value, )
+                        script_fields += field.get_db_name() + ', '
+                        script_values += '{param}, '.format(param=self.get_param_representation())
+                else:
+                    self._many_to_many_insert +=  ((field.get_middle_class(), field.value),)
 
             script_fields = script_fields[:-2] + ') '
             script_values = script_values[:-2] + ')'
             return  script_fields + script_values
         else:
             return ''
+    
+    def run(self, commit=True):        
+        self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+        
+        if len(self._many_to_many_insert) > 0:
+            id = None
+            where = ()
+            fields = None
+            if self.select_executor:
+                fields = self.table.get_fields()
+                for field in fields:
+                    if not field.is_many_to_many():
+                        if field.value != None:
+                            where += (self.oequ_clause(field, field.value), )
+                id = self.select_executor(self.table).filter(*where).values(self.max_func(self.table.get_pk_fields()[0]))[0][0]
+
+                for to_ins in self._many_to_many_insert:
+                    self.table = to_ins[0]
+                    self.table.clear()
+                    self.table.get_fields()[1].value = id
+                    for val in to_ins[1]:
+                        self.table.get_fields()[2].value = val
+                        self.run()
+
 
 class GenericBaseDmlUpdateDelete(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
     def add_base_join(self, table):

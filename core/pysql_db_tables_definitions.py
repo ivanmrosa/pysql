@@ -68,12 +68,20 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         fields = cls.get_fields()
         
         for field in fields:
-            script_create += field.get_script() + ', '
+            if not field.is_many_to_many():
+                script_create += field.get_script() + ', '
         
         script_create = script_create[:-2]
         script_create += ')'
         return script_create
     
+    @classmethod
+    def get_script_drop_table(cls, table_name=''):
+        tbl = table_name
+        if not tbl:
+            tbl = cls.get_db_name()
+        return 'DROP TABLE ' + tbl
+
     @classmethod
     def get_script_create_pk(cls, creating_table=False):
         fields = cls.get_pk_fields()
@@ -143,6 +151,15 @@ class GenericDbTable(PySqlDatabaseTableInterface):
             if field.is_foreign_key():
                 fks += (field, )
         return fks
+    
+    @classmethod
+    def get_many_to_many_fields(cls):
+        fields = cls.get_fields()        
+        fks = ()
+        for field in fields:
+            if field.is_many_to_many():
+                fks += (field, )
+        return fks
 
     @classmethod
     def get_scripts_fk(cls, creating_table=False):
@@ -167,29 +184,37 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     def get_scripts_check_constraints(cls, creating_table=False):
         fields = cls.get_fields()
         check = None
-        cheks = ()
+        checks = ()
         name = ''
         for field in fields:
             check = field.get_check_constraint_validation()
             if check:
                 name = 'CK_' + field.get_owner().get_db_name() + '_' + field.get_db_name() 
-                cheks += ((name, 'ALTER TABLE ' + field.get_owner().get_db_name() + ' ADD CONSTRAINT '+ name +' CHECK (' + check  + ')'), )
+                checks += ((name, 'ALTER TABLE ' + field.get_owner().get_db_name() + ' ADD CONSTRAINT '+ name +' CHECK (' + check  + ')'), )
         
-        return cheks
+        return checks
 
     @classmethod
-    def get_script_remove_field(cls, db_field_name):        
-            return 'ALTER TABLE ' + cls.get_db_name() + ' DROP COLUMN ' + db_field_name
+    def get_script_remove_field(cls, db_field_name):                    
+        field = cls.get_field_by_db_name(db_field_name)
+        if field:
+            if field.is_many_to_many_filed():
+                return cls.get_script_drop_table(field.get_middle_class().get_db_name())
+            else:
+                return 'ALTER TABLE ' + cls.get_db_name() + ' DROP COLUMN ' + db_field_name
     
     @classmethod
     def get_script_add_field(cls, field_class):
         if field_class in cls.get_fields():
-            return 'ALTER TABLE ' + cls.get_db_name() + ' ADD COLUMN ' + field_class.get_script()
+            if field_class.is_many_to_many_field():
+                return field_class.get_script()
+            else:
+                return 'ALTER TABLE ' + cls.get_db_name() + ' ADD COLUMN ' + field_class.get_script()
 
 
-    @classmethod
-    def get_script_drop_table(cls):
-        return 'DROP TABLE ' + cls.get_db_name()
+    #@classmethod
+    #def get_script_drop_table(cls):
+    #    return 'DROP TABLE ' + cls.get_db_name()
     
 
     @classmethod
@@ -209,7 +234,10 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     def clear(cls):
         fields = cls.get_fields()
         for field in fields:
-            field.value = None
+            if not field.is_many_to_many():
+                field.value = None
+            else:
+                field.value = []
 
 
 class PostgreDbTable(GenericDbTable):
@@ -231,7 +259,8 @@ class SqliteDbTable(GenericDbTable):
         fields = cls.get_fields()
         
         for field in fields:
-            script_create += field.get_script() + ', '
+            if not field.is_many_to_many():
+                script_create += field.get_script() + ', '
 
         script_create += cls.get_script_create_pk(creating_table=True)[1] + ', '
         
