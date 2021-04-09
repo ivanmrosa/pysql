@@ -270,8 +270,8 @@ class ManyToManyField(Field):
             ' to relate with ' + related_table_name + '. Too many primary key fields or no primary key found')
 
         fields = {"id": IntegerPrimaryKey()}        
-        fields.update({pk_fields_this_class[0].get_alias() + '_' + self.get_owner().get_alias(): ForeignKey(self.get_owner()) })        
-        fields.update({pk_fields[0].get_alias() + '_' + pk_fields[0].get_owner().get_alias(): ForeignKey(pk_fields[0].get_owner()) })
+        fields.update({pk_fields_this_class[0].get_alias() + '_' + self.get_owner().get_alias(): ForeignKey(self.get_owner(), index=True) })        
+        fields.update({pk_fields[0].get_alias() + '_' + pk_fields[0].get_owner().get_alias(): ForeignKey(pk_fields[0].get_owner(), index=True) })
         
         
         self.__many_to_many_table = type(self.get_db_name(), (DRIVER_CLASSES_CONFIG[DB_DRIVER]['DB_TABLE_CLASS'], ), fields)
