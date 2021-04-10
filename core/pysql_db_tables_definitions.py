@@ -61,7 +61,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
                 return field
         
         return None
-
+    
     @classmethod
     def get_script_create_table(cls):
         script_create = 'CREATE TABLE ' + cls.get_db_name() + '('
