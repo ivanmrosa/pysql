@@ -139,7 +139,7 @@ def create_tables(list_of_tables, model_backup_directory):
                     executor.execute_ddl_script(table.get_script_remove_field(field["name"]))
             #add new fields
             for field in fields:
-                if field.get_db_name() not in old_field_names and not field.is_many_to_many():
+                if field.get_db_name() not in old_field_names:
                     executor.execute_ddl_script(table.get_script_add_field(field))
         
         for index_script in table.get_scripts_indices(False):

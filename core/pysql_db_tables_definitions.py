@@ -207,7 +207,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     @classmethod
     def get_script_add_field(cls, field_class):
         if field_class in cls.get_fields():
-            if field_class.is_many_to_many_field():
+            if field_class.is_many_to_many():
                 return field_class.get_script()
             else:
                 return 'ALTER TABLE ' + cls.get_db_name() + ' ADD COLUMN ' + field_class.get_script()
