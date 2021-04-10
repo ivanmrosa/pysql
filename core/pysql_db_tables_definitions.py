@@ -177,7 +177,8 @@ class GenericDbTable(PySqlDatabaseTableInterface):
             fks += ((name, 'ALTER TABLE ' + cls.get_db_name() + ' ADD CONSTRAINT '+ name +
                 ' FOREIGN KEY(' +  field.get_db_name() + ')' + 
                 ' REFERENCES ' + field.get_related_to_class().get_db_name() + 
-                '(' +  related_pk_fields[0].get_db_name() + ')',  field.get_related_to_class().get_db_name()),)
+                '(' +  related_pk_fields[0].get_db_name() + ')' + field.get_script_cascade(),  
+                field.get_related_to_class().get_db_name()),)
         return fks
     
     @classmethod
@@ -325,7 +326,7 @@ class SqliteDbTable(GenericDbTable):
                     '_' + field.get_related_to_class().get_db_name()[0:3] + '_' + field.get_db_name() 
                 fks += ((name,  ' FOREIGN KEY(' +  field.get_db_name() + ')' + 
                     ' REFERENCES ' + field.get_related_to_class().get_db_name() + 
-                    '(' +  related_pk_fields[0].get_db_name() + ')',  field.get_related_to_class().get_db_name()),)
+                    '(' +  related_pk_fields[0].get_db_name() + ')' + field.get_script_cascade(),  field.get_related_to_class().get_db_name()),)
             return fks
         else:
             return ()

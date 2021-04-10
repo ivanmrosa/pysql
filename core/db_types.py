@@ -187,12 +187,13 @@ class Field(PySqlFieldInterface):
 
 
 class ForeignKey(Field):
-    def __init__(self, related_to_class, nullable=True, db_name='', index=False, unique=False):        
+    def __init__(self, related_to_class, nullable=True, db_name='', index=False, unique=False, delete_cascade=False):        
         super(ForeignKey, self).__init__(db_name= db_name, nullable=nullable, index=index, primary_key=False, unique=unique)        
         self.__related_to_class = related_to_class
+        self.delete_cascade = delete_cascade
             
-    def get_related_class(self):
-        return self.__related_to_class
+    #def get_related_class(self):
+    #    return self.__related_to_class
 
     def get_related_to_class(self):
         return self.__related_to_class
@@ -206,6 +207,12 @@ class ForeignKey(Field):
             field_name = related_table_name + '_' + pk_fields[0].get_db_name()
         
         return field_name
+    
+    def get_script_cascade(self):
+        if self.delete_cascade:
+            return ' ON DELETE CASCADE '
+        else:
+            return ''
 
     def get_script(self):
         pk_fields = self.__related_to_class.get_pk_fields()
@@ -270,8 +277,8 @@ class ManyToManyField(Field):
             ' to relate with ' + related_table_name + '. Too many primary key fields or no primary key found')
 
         fields = {"id": IntegerPrimaryKey()}        
-        fields.update({pk_fields_this_class[0].get_alias() + '_' + self.get_owner().get_alias(): ForeignKey(self.get_owner(), index=True) })        
-        fields.update({pk_fields[0].get_alias() + '_' + pk_fields[0].get_owner().get_alias(): ForeignKey(pk_fields[0].get_owner(), index=True) })
+        fields.update({pk_fields_this_class[0].get_alias() + '_' + self.get_owner().get_alias(): ForeignKey(related_to_class=self.get_owner(), index=True, delete_cascade=True, nullable=False) })        
+        fields.update({pk_fields[0].get_alias() + '_' + pk_fields[0].get_owner().get_alias(): ForeignKey(related_to_class=pk_fields[0].get_owner(), index=True, delete_cascade=True, nullable=False) })
         
         
         self.__many_to_many_table = type(self.get_db_name(), (DRIVER_CLASSES_CONFIG[DB_DRIVER]['DB_TABLE_CLASS'], ), fields)
