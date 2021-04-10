@@ -11,6 +11,7 @@ from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
 from test.models.modelo_veiculo import ModeloVeiculo
 from test.models.mercadoria import Produto, Venda, VendaMultipla
+from test.models.fonte_de_anuncio import FonteDeAnuncio
 from setup.pysql_setup import manage_db
 from core.db_types import NullValue
 import datetime
@@ -476,6 +477,17 @@ class TestManyToManyField(unittest.TestCase):
         vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
         self.assertEqual(vendas_produto[0]["nome"], 'Pneu aro 13')
         
+class TestTableDbNameDiferentFromClassName(unittest.TestCase):
+    def setUp(self):
+        recreate_db()
+        FonteDeAnuncio.clear()
+        FonteDeAnuncio.nome.value = 'teste'
+        FonteDeAnuncio.url_pagina_pricipal.value = 'teste@teste.com'
+        insert(FonteDeAnuncio).run()
+    
+    def test_select(self):
+        nome = select(FonteDeAnuncio).values(FonteDeAnuncio.nome).get_first()["nome"]
+        self.assertEqual(nome, 'teste')
 
 class TestStandardFunctions(unittest.TestCase):
     def setUp(self):

@@ -14,7 +14,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     @classmethod
     def get_alias(cls):
         if not cls.__alias:
-            cls.set_alias(cls.__name__)
+            cls.set_alias(cls.get_db_name())
         
         return cls.__alias
 
