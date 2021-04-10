@@ -18,9 +18,8 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
         self.__port = port
     
     def print_log(self, script):
-        #print(script)
-        pass
-
+        print(script)
+        
     def open_connection(self):
         if not self.connector:
             self.connector = psycopg2.connect("dbname={dbname} user={username} host={host} password={password} port={port}".format(dbname=self.__databasename, username=self.__username, 

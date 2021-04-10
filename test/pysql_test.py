@@ -82,17 +82,17 @@ class TestOperators(unittest.TestCase):
     
     def test_sql_simple_select(self):        
         sql = select(Estado).get_sql()
-        self.assertEqual(sql.upper(), 'SELECT ESTADO.ID, ESTADO.PAIS_ID PAIS, ESTADO.NOME, ESTADO.SIGLA FROM ESTADO ESTADO')
+        self.assertEqual(sql.upper(), 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA FROM ESTADO ESTADO')
     
     def test_sql_simple_select_with_fields(self):
         sql = select(Estado).get_sql(Estado.nome)
         self.assertEqual(sql.upper(), 'SELECT ESTADO.NOME FROM ESTADO ESTADO')
         sql = select(Estado).get_sql(Estado.nome, Estado.pais)
-        self.assertEqual(sql.upper(), 'SELECT ESTADO.NOME, ESTADO.PAIS_ID PAIS FROM ESTADO ESTADO')
+        self.assertEqual(sql.upper(), 'SELECT ESTADO.NOME, ESTADO.PAIS_ID AS PAIS FROM ESTADO ESTADO')
 
     def test_sql_select_with_join(self):
         sql = select(Estado).join(Pais).get_sql()
-        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID PAIS, ESTADO.NOME, ESTADO.SIGLA, PAIS.ID, PAIS.NOME, PAIS.CODIGO FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA, PAIS.ID, PAIS.NOME, PAIS.CODIGO FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
         self.assertEqual(sql.upper(), sql_test)
 
         sql = select(Estado).join(Pais).get_sql(Pais.nome, Estado.nome)
@@ -107,7 +107,7 @@ class TestOperators(unittest.TestCase):
         self.assertEqual(sql.upper(), sql_test)
 
         sql = select(Cidade).join(Estado).join(Pais).get_sql(Pais.nome, Estado.nome, Cidade.nome, Cidade.estado)
-        sql_test = 'SELECT PAIS.NOME, ESTADO.NOME, CIDADE.NOME, CIDADE.ESTADO_ID ESTADO '+ \
+        sql_test = 'SELECT PAIS.NOME, ESTADO.NOME, CIDADE.NOME, CIDADE.ESTADO_ID AS ESTADO '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
@@ -117,7 +117,7 @@ class TestOperators(unittest.TestCase):
         sql = select(Cidade).join(Estado).join(Pais).\
             get_sql((Pais.nome, 'NOME_PAIS'), (Estado.nome, 'NOME_ESTADO'), \
                 (Cidade.nome, 'NOME_CIDADE'), Cidade.estado)
-        sql_test = 'SELECT PAIS.NOME NOME_PAIS, ESTADO.NOME NOME_ESTADO, CIDADE.NOME NOME_CIDADE, CIDADE.ESTADO_ID ESTADO '+ \
+        sql_test = 'SELECT PAIS.NOME AS NOME_PAIS, ESTADO.NOME AS NOME_ESTADO, CIDADE.NOME AS NOME_CIDADE, CIDADE.ESTADO_ID AS ESTADO '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
@@ -126,7 +126,7 @@ class TestOperators(unittest.TestCase):
     def test_sql_get_all_fields_from_one_table(self):
         sql = select(Cidade).join(Estado).join(Pais).\
             get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO CODIGO_PAIS '+ \
+        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
@@ -137,7 +137,7 @@ class TestOperators(unittest.TestCase):
         sql = select(Cidade).join(Estado).join(Pais).filter(oequ(Cidade.nome, 'BELO HORIZONTE') , 
             odif(Estado.nome, 'BAHIA') ).filter(oequ(Pais.codigo, 50)). \
             get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO CODIGO_PAIS '+ \
+        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
@@ -150,7 +150,7 @@ class TestOperators(unittest.TestCase):
         sql = select(Cidade).join(Estado).join(Pais).filter(oequ(Cidade.nome, 'BELO HORIZONTE') , 
             odif(Estado.nome, 'BAHIA'), oequ(Pais.codigo, 50), oor(oequ(Pais.codigo, 1) )).  \
             get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO CODIGO_PAIS '+ \
+        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
@@ -218,11 +218,20 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Pais.clear()
         Pais.nome.value = 'Argentina'
         insert(Pais).run()
+
+        Cidade.clear()
+        Cidade.nome.value = 'Belo Horizonte'
+        Cidade.estado.value = select(Estado).filter(oequ(Estado.sigla, 'MG')).values(Estado.id).get_first()["id"]
+        insert(Cidade).run() 
     
        
     def test_simple_sql(self):
         paises = select(Pais).values()
         self.assertEqual(paises[0][1], 'Brasil')
+    
+    def test_sql_with_fk_field(self):
+        self.assertNotEqual(len(select(Cidade).values(Cidade.estado, Cidade.nome)), 0)
+
     
     def test_sql_with_simple_join(self):
 
@@ -410,6 +419,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
     def test_delete_with_from(self):
         filtro = ( oequ(Pais.nome, 'Brasil'), )
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 2)
+        delete(Cidade).run()
         delete(Estado).join(Pais).filter(*filtro).run()
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
         self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)

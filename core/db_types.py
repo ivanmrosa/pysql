@@ -163,11 +163,11 @@ class Field(PySqlFieldInterface):
                 text = self.__temporary_text_function
             
             if use_alias:
-                text += ' ' + self.get_field_alias_key() + self.get_alias()
+                text +=  self.get_field_alias_key() + self.get_alias()
         else:        
             text = standard_text       
             if use_alias and self.get_alias() != self.get_db_name():
-                text += ' ' + self.get_alias()
+                text +=  self.get_field_alias_key() + self.get_alias()
         
         self.__temporary_alias = ''
         self.__temporary_text_function = ''
