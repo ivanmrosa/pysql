@@ -150,6 +150,9 @@ class Field(PySqlFieldInterface):
         self.__is_deep_copy = False
         return new_field
     
+    def get_field_alias_key(self):
+        return ' AS '
+    
     def get_sql_for_field(self, use_alias = True):
         standard_text = '{table_name}.{field_name}'.format(table_name=self.get_owner().get_alias(),  field_name=self.get_db_name())
         if self.__temporary_text_function:        
@@ -160,7 +163,7 @@ class Field(PySqlFieldInterface):
                 text = self.__temporary_text_function
             
             if use_alias:
-                text += ' ' + self.get_alias()
+                text += ' ' + self.get_field_alias_key() + self.get_alias()
         else:        
             text = standard_text       
             if use_alias and self.get_alias() != self.get_db_name():
