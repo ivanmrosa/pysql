@@ -19,11 +19,26 @@ def update(table):
     return update_object
 
 def insert(table):
-    insert_object = PySqlClassGenerator.get_command_insert_object()
-    insert_object.table = table
-    insert_object.select_executor = select
-    insert_object.oequ_clause = oequ
-    insert_object.max_func = fmax
+    insert_object = PySqlClassGenerator.get_command_insert_object()    
+    if inspect.isclass(table) and issubclass(table, PySqlDatabaseTableInterface):        
+        insert_object.table = table
+        insert_object.select_executor = select
+        insert_object.oequ_clause = oequ
+        insert_object.max_func = fmax        
+    else:
+        if issubclass(type(table), PySqlFieldInterface) and table.is_many_to_many():
+            pk = table.get_owner().get_pk_fields()[0]
+            if not pk.value:
+                raise Exception('The value for primary key field must be informed.')
+            insert_object = PySqlClassGenerator.get_command_insert_object()
+            insert_object.table = table
+            insert_object.select_executor = select
+            insert_object.oequ_clause = oequ
+            insert_object.max_func = fmax
+            insert_object.just_insert_many_to_many = True
+            insert_object.id_to_insert_many_to_many = pk.value
+        else:
+            raise Exception('Not a valid class given.')
     return insert_object
 
 def delete(table):

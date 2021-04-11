@@ -255,6 +255,8 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
     oequ_clause = None
     max_func = None
     _many_to_many_insert = ()
+    just_insert_many_to_many = False
+    id_to_insert_many_to_many = None
 
     def get_script(self):
         self._many_to_many_insert = ()
@@ -279,21 +281,30 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
         else:
             return ''
     
-    def run(self, commit=True):        
-        self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+    def run(self, commit=True):   
+        if not self.just_insert_many_to_many:
+            self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+        else:
+            self._many_to_many_insert =  ((self.table.get_middle_class(), self.table.value),)
         
         if len(self._many_to_many_insert) > 0:
             id = None
             where = ()
             fields = None
             if self.select_executor:
-                fields = self.table.get_fields()
-                for field in fields:
-                    if not field.is_many_to_many():
-                        if field.value != None:
-                            where += (self.oequ_clause(field, field.value), )
-                id = self.select_executor(self.table).filter(*where).values(self.max_func(self.table.get_pk_fields()[0]))[0][0]
+                if not self.just_insert_many_to_many:
+                    fields = self.table.get_fields()
+                    for field in fields:
+                        if not field.is_many_to_many():
+                            if field.value != None:
+                                where += (self.oequ_clause(field, field.value), )
+                    id = self.select_executor(self.table).filter(*where).values(self.max_func(self.table.get_pk_fields()[0]))[0][0]
+                else:
+                    id = self.id_to_insert_many_to_many
 
+                self.just_insert_many_to_many = False
+                self.id_to_insert_many_to_many = None
+                
                 for to_ins in self._many_to_many_insert:
                     self.table = to_ins[0]
                     self.table.clear()
