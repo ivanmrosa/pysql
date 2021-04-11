@@ -470,6 +470,14 @@ class TestManyToManyField(unittest.TestCase):
         
         self.assertEqual(len(vendas_produto), 2)
 
+        VendaMultipla.clear()
+        VendaMultipla.id.value = select(VendaMultipla).values(fmax(VendaMultipla.id)).get_first()["id"]
+        VendaMultipla.produtos.add(get_id_produto(' Limpador de parabrisa '))
+        insert(VendaMultipla.produtos).run()
+
+        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)        
+        self.assertEqual(len(vendas_produto), 3)
+
     def test_delete(self):
         get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
         VendaMultipla.clear()

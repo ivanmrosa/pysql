@@ -163,32 +163,36 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                 if is_class:
                     is_db_table = issubclass(field, PySqlDatabaseTableInterface)
                 if issubclass(type(field), tuple) :
-                    fields_names.append(field[1])
-                    self.all_fields.append(field[0])
-                    if field[0].is_used_in_aggregated_function():
-                        self.aggregated_fields.append(field[0])
-                    str_fields += field[0].get_sql_for_field(use_alias = False) + field[0].get_field_alias_key() + field[1] + ', '
+                    if not field[0].is_many_to_many():
+                        fields_names.append(field[1])
+                        self.all_fields.append(field[0])
+                        if field[0].is_used_in_aggregated_function():
+                            self.aggregated_fields.append(field[0])
+                        str_fields += field[0].get_sql_for_field(use_alias = False) + field[0].get_field_alias_key() + field[1] + ', '
                 elif is_db_table:                                        
                     str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
                     for f in field.get_fields():
-                        fields_names.append(f.get_db_name())
+                        if not f.is_many_to_many():
+                            fields_names.append(f.get_db_name())
+                            self.all_fields.append(field)
+                else: 
+                    if not field.is_many_to_many():                   
+                        fields_names.append(field.get_alias())
                         self.all_fields.append(field)
-                else:                    
-                    fields_names.append(field.get_alias())
-                    self.all_fields.append(field)
-                    if field.is_used_in_aggregated_function():
-                        self.aggregated_fields.append(field)
+                        if field.is_used_in_aggregated_function():
+                            self.aggregated_fields.append(field)
 
-                    str_fields += field.get_sql_for_field() + ', '
+                        str_fields += field.get_sql_for_field() + ', '
 
             str_fields = str_fields[:-2]
         else:            
             for operation in self.list_operations:                
                 table = operation["table"]
                 for f in table.get_fields():
-                    str_fields += f.get_sql_for_field() + ', '
-                    fields_names.append(f.get_db_name())
-                    self.all_fields.append(f)
+                    if not f.is_many_to_many():
+                        str_fields += f.get_sql_for_field() + ', '
+                        fields_names.append(f.get_db_name())
+                        self.all_fields.append(f)
             
             str_fields = str_fields[:-2]
                 
