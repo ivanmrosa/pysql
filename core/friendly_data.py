@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, datetime
 
 class FriendlyRow(object):
     def __init__(self, fields_names):
@@ -21,7 +21,10 @@ class FriendlyRow(object):
         value = {}
         index = 0
         for field_name in self.fields_names:
-            value.update({field_name : self.row[index]})
+            f = self.row[index]
+            if type(f) in (datetime.datetime, datetime.date):
+                f = f.isoformat()
+            value.update({field_name : f})
             index += 1
         return value
 
