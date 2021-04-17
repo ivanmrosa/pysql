@@ -4,5 +4,6 @@
     "port":"5432",
     "databasename":"pysqltest",
     "password":"ivanrosa",
-    "username":"postgres"
+    "username":"postgres",
+    "debug":"true"
 }

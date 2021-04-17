@@ -11,6 +11,12 @@ PORT = DB_CONFIG['port']
 DATABASENAME = DB_CONFIG['databasename']
 PASSWORD = DB_CONFIG['password']
 USERNAME = DB_CONFIG['username']
+
+if 'debug' in DB_CONFIG:
+    DEBUG = DB_CONFIG['debug']
+else:
+    DEBUG = False
+
 POSTGRESQL = 'POSTGRESQL'
 ORACLE = 'ORACLE'
 MYSQL = 'MYSQL'

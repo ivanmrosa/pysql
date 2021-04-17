@@ -3,7 +3,7 @@ from . interface import PySqlRunScriptInterface
 
 
 class SqliteScriptExecutor(PySqlRunScriptInterface):
-    def __init__(self, databasename, username, password, host, port):
+    def __init__(self, databasename, username, password, host, port, debug = False):
         self.connector = None
         self.cursor = None   
         self.__databasename = databasename
@@ -11,6 +11,11 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
         self.__password = password     
         self.__host = host
         self.__port = port
+        self.__debug = debug
+    
+    def print_log(self, text):
+        if self.__debug:
+            print(text)
 
     def open_connection(self):
         if not self.connector:
@@ -27,7 +32,7 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
             self.connector = None
     
     def execute_ddl_script(self, script, auto_commit=False):    
-        print(script) 
+        self.print_log(script) 
         if script:   
             self.open_connection()
             print(script)
@@ -39,7 +44,7 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
 
 
     def execute_dml_script(self, script, params, auto_commit = False):
-        print(script)
+        self.print_log(script)
         if script:               
             self.open_connection()
             self.cursor.execute(script, params)
@@ -49,7 +54,7 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
                 self.close_connection()
 
     def execute_select_script(self, sql, params):
-        print(sql)
+        self.print_log(sql) 
         self.open_connection()
         self.cursor.execute(sql, params)
         results =  self.cursor.fetchall()
@@ -62,7 +67,7 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
             self.close_connection()
     
     def run_ddl_isolated(self, script, databasename):
-        print(script)
+        self.print_log(script) 
         self.close_connection()
         original_database = self.__databasename        
         self.__databasename = databasename    

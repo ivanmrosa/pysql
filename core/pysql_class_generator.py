@@ -1,4 +1,4 @@
-from . pysql_config import DRIVER_CLASSES_CONFIG as driver_config, DB_DRIVER, USERNAME, DATABASENAME, PASSWORD, HOST, PORT
+from . pysql_config import DRIVER_CLASSES_CONFIG as driver_config, DB_DRIVER, USERNAME, DATABASENAME, PASSWORD, HOST, PORT, DEBUG
 import inspect
 
 class PySqlClassGenerator(object):
@@ -101,5 +101,5 @@ class PySqlClassGenerator(object):
     @classmethod
     def get_script_executor(cls):
         cls.define_initial_data(DB_DRIVER)
-        return cls.script_executor(databasename=DATABASENAME, username=USERNAME, password=PASSWORD, host=HOST, port=PORT)
+        return cls.script_executor(databasename=DATABASENAME, username=USERNAME, password=PASSWORD, host=HOST, port=PORT, debug=DEBUG)
 

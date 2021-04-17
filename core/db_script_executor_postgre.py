@@ -8,7 +8,7 @@ from psycopg2.errors import DuplicateDatabase
 
 
 class PostgreScriptExecutor(PySqlRunScriptInterface):
-    def __init__(self, databasename, username, password, host, port):
+    def __init__(self, databasename, username, password, host, port, debug = False):
         self.connector = None
         self.cursor = None   
         self.__databasename = databasename
@@ -16,9 +16,11 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
         self.__password = password     
         self.__host = host
         self.__port = port
+        self.__debug = debug
     
     def print_log(self, script):
-        print(script)
+        if self.__debug:
+            print(script)
         
     def open_connection(self):
         if not self.connector:
