@@ -13,6 +13,7 @@ class PySqlClassGenerator(object):
     sql_command_class = None
 
     script_executor = None
+    script_executor_instance = None
 
     initialized = False
 
@@ -101,5 +102,8 @@ class PySqlClassGenerator(object):
     @classmethod
     def get_script_executor(cls):
         cls.define_initial_data(DB_DRIVER)
-        return cls.script_executor(databasename=DATABASENAME, username=USERNAME, password=PASSWORD, host=HOST, port=PORT, debug=DEBUG)
+        if not cls.script_executor_instance:
+            cls.script_executor_instance = cls.script_executor(databasename=DATABASENAME, \
+                username=USERNAME, password=PASSWORD, host=HOST, port=PORT, debug=DEBUG)
+        return cls.script_executor_instance
 

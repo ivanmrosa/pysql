@@ -71,6 +71,9 @@ class PySqlRunScriptInterface(ABC):
     def commit(self):
         pass
     
+    def rollback(self):
+        pass
+    
 class PySqlCommandInterface(ABC):
     pass
     

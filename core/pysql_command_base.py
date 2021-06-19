@@ -248,8 +248,8 @@ class GenericBaseDmlInsertUpdate(DmlBase):
             self.script_executor.commit()
             self.script_executor.close_connector()
 
-    def run(self, commit=True):        
-        self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+    def run(self):        
+        self.script_executor.execute_dml_script(self.get_script(), self.params, False)
     
     def get_script(self):
         return ''
@@ -285,9 +285,9 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
         else:
             return ''
     
-    def run(self, commit=True):   
+    def run(self):   
         if not self.just_insert_many_to_many:
-            self.script_executor.execute_dml_script(self.get_script(), self.params, commit)
+            self.script_executor.execute_dml_script(self.get_script(), self.params, False)
         else:
             self._many_to_many_insert =  ((self.table.get_middle_class(), self.table.value),)
         
@@ -334,10 +334,10 @@ class GenericBaseDmlUpdateDelete(GenricBaseDmlScripts, GenericBaseDmlInsertUpdat
         else:
             self.script_where += ' WHERE ' + script
    
-    def run(self, commit=True):   
+    def run(self):   
         script = self.get_script()     
         self.params += tuple(self.list_params)
-        self.script_executor.execute_dml_script(script, self.params, commit)    
+        self.script_executor.execute_dml_script(script, self.params, False)    
 
 
 class GenericBaseDmlUpdate(GenericBaseDmlUpdateDelete):
@@ -488,7 +488,7 @@ class GenericBaseDmlUpdateSqlite(GenericBaseDmlUpdate):
             Exception('The update parameters must be an PySqlDataBaseTAbleInterface')
     
 
-    def run(self, commit=True):   
+    def run(self):   
         script = self.get_script()     
         self.params += tuple(self.list_params)        
         if self.execute_using_sql:            
@@ -517,12 +517,9 @@ class GenericBaseDmlUpdateSqlite(GenericBaseDmlUpdate):
                     pk_field_name=self.table.get_pk_fields()[0].get_db_name())                                
                 self.params +=  update_filter 
                 self.script_executor.execute_dml_script(update_script, self.params, False)
-            
-            if commit:
-                self.script_executor.commit()    
-            
+                        
         else:
-            self.script_executor.execute_dml_script(script, self.params, commit)    
+            self.script_executor.execute_dml_script(script, self.params, False)    
 
 
 #delete GenericBaseDmDelete

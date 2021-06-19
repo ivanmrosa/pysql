@@ -14,6 +14,7 @@ from test.models.mercadoria import Produto, Venda, VendaMultipla
 from test.models.fonte_de_anuncio import FonteDeAnuncio
 from setup.pysql_setup import manage_db
 from core.db_types import NullValue
+from core.unit_of_work import UnitOFWork
 import datetime
 
 
@@ -495,7 +496,7 @@ class TestManyToManyField(unittest.TestCase):
         vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
         self.assertEqual(vendas_produto[0]["nome"], 'Pneu aro 13')
         
-class TestTableDbNameDiferentFromClassName(unittest.TestCase):
+class TestTableDbNameDifferentFromClassName(unittest.TestCase):
     def setUp(self):
         recreate_db()
         FonteDeAnuncio.clear()
@@ -747,6 +748,85 @@ class TestStandardFunctions(unittest.TestCase):
     def test_lpad_filter(self):
         self.assertEqual(select(Produto).filter(oequ(flpad(Produto.nome, '0', 13), '00Pneu aro 15')).values(flpad(Produto.nome, '0', 13))[0]['nome'], '00Pneu aro 15')
 
+class TestTransaction(unittest.TestCase):
+    def setUp(self):
+        #base = os.path.join(os.getcwd(), 'test/') 
+        #manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
+        recreate_db()
+    
+    
+    def test_rollback_insert(self):
+        Pais.clear()
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        pais_insert = insert(Pais)
+        pais_insert.run()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        
+        pais_id = select(Pais).values(Pais.id).get_first()["id"]
+        
+        Estado.clear()
+        Estado.nome.value = 'São Paulo'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+        self.assertEqual(len(select(Estado).values(Estado.id)), 1)
+        
+        UnitOFWork.discart()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 0)
+        self.assertEqual(len(select(Estado).values(Estado.id)), 0)
+    
+    def test_commit_insert(self):
+        Pais.clear()
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        pais_insert = insert(Pais)
+        pais_insert.run()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        
+        pais_id = select(Pais).values(Pais.id).get_first()["id"]
+        
+        Estado.clear()
+        Estado.nome.value = 'São Paulo'
+        Estado.pais.value = pais_id
+        insert(Estado).run()
+        self.assertEqual(len(select(Estado).values(Estado.id)), 1)
+
+        UnitOFWork.save()
+        UnitOFWork.discart()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        self.assertEqual(len(select(Estado).values(Estado.id)), 1)
+
+    def test_rollback_delete(self):
+        Pais.clear()
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        pais_insert = insert(Pais)
+        pais_insert.run()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        UnitOFWork.save()
+
+        delete(Pais).run()
+
+        self.assertEqual(len(select(Pais).values(Pais.id)), 0)
+
+        UnitOFWork.discart()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        
+    def test_commit_delete(self):
+        Pais.clear()
+        Pais.nome.value = 'Brasil'
+        Pais.codigo.value = '0055'
+        pais_insert = insert(Pais)
+        pais_insert.run()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 1)
+        UnitOFWork.save()
+
+        delete(Pais).run()
+
+        self.assertEqual(len(select(Pais).values(Pais.id)), 0)
+        
+        UnitOFWork.save()
+        self.assertEqual(len(select(Pais).values(Pais.id)), 0)
 
 if __name__ == '__main__':
     unittest.main()

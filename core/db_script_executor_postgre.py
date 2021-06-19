@@ -24,7 +24,8 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
         
     def open_connection(self):
         if not self.connector:
-            self.connector = psycopg2.connect("dbname={dbname} user={username} host={host} password={password} port={port}".format(dbname=self.__databasename, username=self.__username, 
+            self.connector = psycopg2.connect("dbname={dbname} user={username} host={host} password={password} port={port}".\
+                format(dbname=self.__databasename, username=self.__username, \
                 host=self.__host, password=self.__password, port=self.__port))
         if not self.cursor:
             self.cursor = self.connector.cursor()
@@ -44,7 +45,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
         if auto_commit:
             self.connector.commit()
-            self.close_connection()
+            #self.close_connection()
 
 
     def execute_dml_script(self, script, params, auto_commit = False):        
@@ -54,20 +55,23 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
         if auto_commit:
             self.connector.commit()        
-            self.close_connection()
+            #self.close_connection()
 
     def execute_select_script(self, sql, params):
         self.print_log(sql)        
         self.open_connection()
         self.cursor.execute(sql, params)
         results =  self.cursor.fetchall()
-        self.close_connection()
+        #self.close_connection()
         return results
     
     def commit(self):
         if self.connector:
             self.connector.commit()
-            self.close_connection()
+            #self.close_connection()
+    
+    def rollback(self):
+        return self.connector.rollback()
     
     def run_ddl_isolated(self, script, databasename):
         self.print_log(script)                
@@ -96,7 +100,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
     def drop_database(self):
         self.run_ddl_isolated('drop database if exists {database};'.format(database=self.__databasename), 'postgres')   
 
-    def __del__(self):
+    def __del__(self):        
         self.close_connection()
 
 
