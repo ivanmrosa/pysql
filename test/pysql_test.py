@@ -1,10 +1,16 @@
 import unittest, os
 from core.pysql_config import DB_DRIVER
 from core.sql_db_tables import BaseDbTable
-from core.sql_operators import *
-from core.pysql_command import select, insert, update, delete
-from core.pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
-    fconcat, fdistinct, fconcat, frpad, flpad
+
+#from core.sql_operators import *
+#from core.pysql_command import select, insert, update, delete
+#from core.pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
+#    fconcat, fdistinct, fconcat, frpad, flpad, pagination, limit
+
+from shortcut.operators import *
+from shortcut.commands import *
+from shortcut.functions import *
+
 from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
@@ -42,7 +48,7 @@ class TestDbTables(unittest.TestCase):
         if DB_DRIVER == 'POSTGRESQL':
             script = 'CREATE TABLE PAIS(ID SERIAL NOT NULL, NOME VARCHAR(50) NOT NULL, CODIGO INTEGER)'
             self.assertEqual(Pais.get_script_create_table().upper(), script)
-            script = 'CREATE TABLE ESTADO(ID SERIAL NOT NULL, PAIS_ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, SIGLA VARCHAR(2))'
+            script = 'CREATE TABLE ESTADO(ID SERIAL NOT NULL, PAIS_ID INTEGER NOT NULL, NOME VARCHAR(50) NOT NULL, SIGLA_ESTADO VARCHAR(2))'
             self.assertEqual(Estado.get_script_create_table().upper(), script)
         else:
             pass
@@ -77,13 +83,14 @@ class TestDbTables(unittest.TestCase):
 class TestFields(unittest.TestCase):
     def test_get_field_owner(self):
         self.assertEqual(Pais.id.get_owner().get_db_name(), 'Pais')
+    
 
 @unittest.skipIf(DB_DRIVER != 'POSTGRESQL', 'NOT POSTGRE') 
 class TestOperators(unittest.TestCase):
     
     def test_sql_simple_select(self):        
         sql = select(Estado).get_sql()
-        self.assertEqual(sql.upper(), 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA FROM ESTADO ESTADO')
+        self.assertEqual(sql.upper(), 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA_ESTADO AS SIGLA FROM ESTADO ESTADO')
     
     def test_sql_simple_select_with_fields(self):
         sql = select(Estado).get_sql(Estado.nome)
@@ -93,7 +100,7 @@ class TestOperators(unittest.TestCase):
 
     def test_sql_select_with_join(self):
         sql = select(Estado).join(Pais).get_sql()
-        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA, PAIS.ID, PAIS.NOME, PAIS.CODIGO FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA_ESTADO AS SIGLA, PAIS.ID, PAIS.NOME, PAIS.CODIGO FROM ESTADO ESTADO JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
         self.assertEqual(sql.upper(), sql_test)
 
         sql = select(Estado).join(Pais).get_sql(Pais.nome, Estado.nome)
@@ -126,8 +133,8 @@ class TestOperators(unittest.TestCase):
 
     def test_sql_get_all_fields_from_one_table(self):
         sql = select(Cidade).join(Estado).join(Pais).\
-            get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
+            get_sql(Estado, (Cidade.nome, 'NOME_CIDADE'), (Pais.codigo, 'CODIGO_PAIS'))
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA_ESTADO AS SIGLA, CIDADE.NOME AS NOME_CIDADE, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID'
@@ -137,8 +144,8 @@ class TestOperators(unittest.TestCase):
         self.maxDiff = None
         sql = select(Cidade).join(Estado).join(Pais).filter(oequ(Cidade.nome, 'BELO HORIZONTE') , 
             odif(Estado.nome, 'BAHIA') ).filter(oequ(Pais.codigo, 50)). \
-            get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
+            get_sql(Estado, (Cidade.nome, 'CIDADE_NOME'), (Pais.codigo, 'CODIGO_PAIS'))
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA_ESTADO AS SIGLA, CIDADE.NOME AS CIDADE_NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
@@ -150,8 +157,8 @@ class TestOperators(unittest.TestCase):
         self.maxDiff = None
         sql = select(Cidade).join(Estado).join(Pais).filter(oequ(Cidade.nome, 'BELO HORIZONTE') , 
             odif(Estado.nome, 'BAHIA'), oequ(Pais.codigo, 50), oor(oequ(Pais.codigo, 1) )).  \
-            get_sql(Estado, Cidade.nome, (Pais.codigo, 'CODIGO_PAIS'))
-        sql_test = 'SELECT ESTADO.*, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
+            get_sql(Estado, (Cidade.nome), (Pais.codigo, 'CODIGO_PAIS'))
+        sql_test = 'SELECT ESTADO.ID, ESTADO.PAIS_ID AS PAIS, ESTADO.NOME, ESTADO.SIGLA_ESTADO AS SIGLA, CIDADE.NOME, PAIS.CODIGO AS CODIGO_PAIS '+ \
         'FROM CIDADE CIDADE '+ \
         'JOIN ESTADO ESTADO ON CIDADE.ESTADO_ID = ESTADO.ID '+ \
         'JOIN PAIS PAIS ON ESTADO.PAIS_ID = PAIS.ID '+\
@@ -424,6 +431,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
         delete(Estado).join(Pais).filter(*filtro).run()
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
         self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)
+    
 
 class TestManyToManyField(unittest.TestCase):
     def setUp(self):
@@ -682,6 +690,7 @@ class TestStandardFunctions(unittest.TestCase):
     def test_lpad(self):
         self.assertEqual(select(Produto).filter(oequ(Produto.nome, 'Pneu aro 15')).values(flpad(Produto.nome, '0', 13))[0]['nome'], '00Pneu aro 15')
     
+    
     #functions used in filter
     def test_upper_filter(self):
         produto_nome = select(Produto).filter(oequ(fupper(Produto.nome), 'PNEU ARO 13')).values(fupper(Produto.nome))[0]['nome']
@@ -747,6 +756,20 @@ class TestStandardFunctions(unittest.TestCase):
 
     def test_lpad_filter(self):
         self.assertEqual(select(Produto).filter(oequ(flpad(Produto.nome, '0', 13), '00Pneu aro 15')).values(flpad(Produto.nome, '0', 13))[0]['nome'], '00Pneu aro 15')
+
+    def test_pagination(self):
+        data1 = pagination(select(Venda), 2, 1).values().as_dict_list()
+        data2 = pagination(select(Venda), 2, 2).values().as_dict_list()
+
+        self.assertEqual(len(data1), 2)
+        self.assertEqual(len(data2), 2)
+
+        self.assertNotEquals(data1, data2)
+
+    def test_limit(self):
+        data1 = limit(select(Venda), 1).values().as_dict_list()        
+        self.assertEqual(len(data1), 1)
+
 
 class TestTransaction(unittest.TestCase):
     def setUp(self):

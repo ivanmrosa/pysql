@@ -6,4 +6,4 @@ class Estado(BaseDbTable):
     id = IntegerPrimaryKey()
     pais = ForeignKey(related_to_class=Pais, nullable=False)
     nome = VarcharField(size=50, db_name='nome', nullable=False)
-    sigla = VarcharField(size=2, db_name='sigla')
+    sigla = VarcharField(size=2, db_name='sigla_estado')

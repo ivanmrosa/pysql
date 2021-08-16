@@ -16,9 +16,9 @@ class DmlBase(PySqlCommandInterface):
     def get_param_representation(self):
         return '%s'
 
-class GenricBaseDmlScripts(DmlBase):
+class GenericBaseDmlScripts(DmlBase):
     def __init__(self, script_executor_object):
-        super(GenricBaseDmlScripts, self).__init__(script_executor_object)
+        super(GenericBaseDmlScripts, self).__init__(script_executor_object)
         self.list_operations = []
         self.list_params = []
         self.script_fields = ''
@@ -129,11 +129,9 @@ class GenricBaseDmlScripts(DmlBase):
         self.script_where += '(' + temporary_script + ')'
 
         return self
-
-
-class GenricBaseDmlSelect(GenricBaseDmlScripts):
+class GenericBaseDmlSelect(GenericBaseDmlScripts):
     def __init__(self, script_executor_object):
-        super(GenricBaseDmlSelect, self).__init__(script_executor_object)
+        super(GenericBaseDmlSelect, self).__init__(script_executor_object)
         self.fields_to_select = None
         self.script_order_by = ''
         self.aggregated_fields = []
@@ -170,9 +168,10 @@ class GenricBaseDmlSelect(GenricBaseDmlScripts):
                             self.aggregated_fields.append(field[0])
                         str_fields += field[0].get_sql_for_field(use_alias = False) + field[0].get_field_alias_key() + field[1] + ', '
                 elif is_db_table:                                        
-                    str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
+                    #str_fields += '{table_name}.*, '.format(table_name=field.get_alias())
                     for f in field.get_fields():
                         if not f.is_many_to_many():
+                            str_fields += f.get_sql_for_field() + ', '
                             fields_names.append(f.get_db_name())
                             self.all_fields.append(field)
                 else: 
@@ -318,7 +317,7 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
                         self.run()
 
 
-class GenericBaseDmlUpdateDelete(GenricBaseDmlScripts, GenericBaseDmlInsertUpdate):
+class GenericBaseDmlUpdateDelete(GenericBaseDmlScripts, GenericBaseDmlInsertUpdate):
     def add_base_join(self, table):
         if self.script_from:
             self.script_from += ', {table} {alias} '.format(table=table.get_db_name(), alias=table.get_alias())
@@ -393,20 +392,20 @@ class GenericBaseDmDelete(GenericBaseDmlUpdateDelete):
 
 
 #sql
-class GenericBaseDmlSelectPostgre(GenricBaseDmlSelect):
+class GenericBaseDmlSelectPostgre(GenericBaseDmlSelect):
     pass
 
-class GenericBaseDmlSelectMySql(GenricBaseDmlSelect):
+class GenericBaseDmlSelectMySql(GenericBaseDmlSelect):
     pass
 
 
-class GenericBaseDmlSelectOracle(GenricBaseDmlSelect):
+class GenericBaseDmlSelectOracle(GenericBaseDmlSelect):
     pass
 
-class GenericBaseDmlSelectSqlServer(GenricBaseDmlSelect):
+class GenericBaseDmlSelectSqlServer(GenericBaseDmlSelect):
     pass
 
-class GenericBaseDmlSelectSqlite(GenricBaseDmlSelect):
+class GenericBaseDmlSelectSqlite(GenericBaseDmlSelect):
     def get_param_representation(self):
         return '?'
 

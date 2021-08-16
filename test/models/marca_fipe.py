@@ -3,7 +3,7 @@ from core.db_types import VarcharField, IntegerPrimaryKey
 
 class MarcaFipe(BaseDbTable):
     id = IntegerPrimaryKey()
-    nome = VarcharField(db_name='nome', size=50, index=True, nullable=False)
+    nome = VarcharField(db_name='nome_fipe', size=50, index=True, nullable=False)
     
     @classmethod
     def get_db_name(cls):

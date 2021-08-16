@@ -121,3 +121,11 @@ def frpad(field, complete_with, size, alias = ''):
 def flpad(field, complete_with, size, alias = ''):
     text_function = PySqlClassGenerator.get_sql_functions_config_class().flpad(complete_with, size)
     return field.get_field_configureted_for_functions(text_function, alias, False)
+
+def pagination(sql_object, limit, page):
+    text_function = PySqlClassGenerator.get_sql_functions_config_class().pagination()
+    sql_object.script_from += text_function.format(LIMIT=limit, OFFSET=page)
+    return sql_object
+
+def limit(sql_object, limit):
+    return pagination(sql_object=sql_object, limit=limit, page=1)

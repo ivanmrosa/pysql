@@ -69,6 +69,10 @@ class PysqlFunctionsConfig(object):
     @staticmethod
     def flpad(complete_with, size):
         return "LPAD({field}, {size}, '{complete_with}' )".format(size=size, complete_with=complete_with, field='{field}')
+    
+    @staticmethod
+    def pagination():
+        return " LIMIT {LIMIT} OFFSET {OFFSET} "  
 
 
 class PysqlFunctionsConfigPostgre(PysqlFunctionsConfig):
