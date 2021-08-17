@@ -769,6 +769,15 @@ class TestStandardFunctions(unittest.TestCase):
     def test_limit(self):
         data1 = limit(select(Venda), 1).values().as_dict_list()        
         self.assertEqual(len(data1), 1)
+    
+    def test_pagination_with_order_by(self):
+        data1 = pagination(select(Venda).order_by(Venda.id), 2, 1).values().as_dict_list()
+        data2 = pagination(select(Venda).order_by(Venda.id), 2, 2).values().as_dict_list()
+
+        self.assertEqual(len(data1), 2)
+        self.assertEqual(len(data2), 2)
+
+        self.assertNotEquals(data1, data2)
 
 
 class TestTransaction(unittest.TestCase):

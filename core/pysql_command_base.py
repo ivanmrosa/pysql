@@ -134,6 +134,7 @@ class GenericBaseDmlSelect(GenericBaseDmlScripts):
         super(GenericBaseDmlSelect, self).__init__(script_executor_object)
         self.fields_to_select = None
         self.script_order_by = ''
+        self.sql_script_pagination = ''
         self.aggregated_fields = []
         self.all_fields = []
 
@@ -211,7 +212,8 @@ class GenericBaseDmlSelect(GenericBaseDmlScripts):
 
     def get_sql_and_fields_names(self, *fields):                
         fields_names, str_fields = self.get_fields_names_and_script(*fields)
-        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where + self.get_script_group_by() + self.script_order_by
+        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where + self.get_script_group_by() + self.script_order_by + \
+            self.sql_script_pagination
         return script.strip(), fields_names
     
     def get_sql(self, *fields):
