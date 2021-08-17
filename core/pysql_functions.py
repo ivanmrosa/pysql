@@ -129,7 +129,7 @@ def pagination(sql_object, limit, page):
     elif limit:
         sql_object.sql_script_pagination += text_function.format(LIMIT=limit, OFFSET=0)
     elif page:
-        sql_object.sql_script_pagination += text_function.format(LIMIT=NullValue, OFFSET=page)
+        sql_object.sql_script_pagination += text_function.format(LIMIT='NULL', OFFSET=page)
           
     return sql_object
 
