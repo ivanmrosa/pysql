@@ -224,6 +224,10 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return []
     
     @classmethod
+    def get_class_name(cls):
+        return cls.__name__
+    
+    @classmethod
     def get_old_class_name(cls):
         return None
     
