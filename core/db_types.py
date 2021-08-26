@@ -37,6 +37,10 @@ class Field(PySqlFieldInterface):
         self.__is_deep_copy = False
 
         self._property_name = ''
+
+    @classmethod
+    def get_class_name(cls):
+        return cls.__name__
     
     def get_db_name(self):
         return self._db_name
