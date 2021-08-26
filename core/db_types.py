@@ -40,7 +40,7 @@ class Field(PySqlFieldInterface):
 
     @classmethod
     def get_class_name(cls):
-        return cls.__name__
+        return cls._property_name
     
     def get_db_name(self):
         return self._db_name

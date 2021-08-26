@@ -27,10 +27,7 @@ class MetaDbTable(type):
                 if not attr.get_db_name():
                     attr.set_db_name(key)
                 order += 1
-                                
-                   
-                
-                            
+                                                            
 class PySqlDatabaseTableInterface(metaclass=MetaDbTable):    
     def get_alias(self):
         pass
