@@ -59,8 +59,16 @@ class PysqlFunctionsConfig(object):
         return 'POSITION({substring} in {field})'.format(substring=substring, field='{field}')
     
     @staticmethod
-    def fconcat():
-        return ''
+    def fconcat(*fields):
+        result = ""
+
+        for field in fields:
+            if type(field) is str:
+                result += " '{field}' ||".format(field=field)
+            else:
+                result += " {field} ||".format(field=field.get_alias() )
+        
+        return result[:-2]
     
     @staticmethod
     def frpad(complete_with, size):

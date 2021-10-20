@@ -1,4 +1,5 @@
-from . db_types import Field, NullValue
+from . sql_db_tables import BaseDbTable
+from . db_types import CharacterField, Field, NullValue
 from . field_tools import FieldTools
 from . pysql_class_generator import PySqlClassGenerator
 from . interface import PySqlDistinctClause
@@ -103,15 +104,21 @@ def freplace(field, replace_this, replace_to, alias = ''):
 
 def finstr(field, substring, alias = ''):     
     if FieldTools.is_db_field(substring):
-        temp_substring = temp_substring.get_sql_for_field()
+        temp_substring = substring.get_sql_for_field()
     else:
         temp_substring = "'{character}'".format(character=substring)
 
     text_function = PySqlClassGenerator.get_sql_functions_config_class().finstr(temp_substring)
     return field.get_field_configureted_for_functions(text_function, alias, False)
 
-def fconcat(*fields, alias = ''):
-    raise Exception('fconcat is not implemented.')
+def fconcat(alias, *fields):
+    text_function = PySqlClassGenerator.get_sql_functions_config_class().fconcat(*fields)
+    field = CharacterField(size=10000, db_name=alias)
+    table = BaseDbTable()
+    setattr(table, alias, field)
+    field.set_owner(table)
+
+    return field.get_field_configureted_for_functions(text_function, alias, False)    
 
 def frpad(field, complete_with, size, alias = ''):
     text_function = PySqlClassGenerator.get_sql_functions_config_class().frpad(complete_with, size)
