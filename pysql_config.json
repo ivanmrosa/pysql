@@ -1,9 +1,9 @@
 {
     "driver":"POSTGRESQL",
-    "host":"localhost",
+    "host":"192.168.15.30",
     "port":"5432",
     "databasename":"pysqltest",
-    "password":"ivanrosa",
+    "password":"octopussySeaHorse007##$",
     "username":"postgres",
     "debug":"true"
 }

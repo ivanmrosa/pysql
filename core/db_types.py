@@ -158,7 +158,7 @@ class Field(PySqlFieldInterface):
         return ' AS '
     
     def get_sql_for_field(self, use_alias = True):
-        standard_text = '{table_name}.{field_name}'.format(table_name=self.get_owner().get_alias(),  field_name=self.get_db_name())
+        standard_text = '{table_name}.{field_name}'.format(table_name=self.get_owner().get_alias(), field_name=self.get_db_name())
         if self.__temporary_text_function:        
             
             if '{field}' in self.__temporary_text_function:    
@@ -186,11 +186,13 @@ class Field(PySqlFieldInterface):
         self._value = val
 
     #def __get__(self, instance, owner):
-    #    return self._value
+    #    if instance:
+    #        return instance.value
+    #    else:
+    #        return self
     
     #def __set__(self, instance, value):
-    #    self._value = value
-
+    #    instance.value = value
 
 
 class ForeignKey(Field):

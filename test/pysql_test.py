@@ -22,6 +22,7 @@ from setup.pysql_setup import manage_db
 from core.db_types import NullValue
 from core.unit_of_work import UnitOFWork
 import datetime
+import asyncio
 
 
 
@@ -778,6 +779,12 @@ class TestStandardFunctions(unittest.TestCase):
         self.assertEqual(len(data2), 2)
 
         self.assertNotEquals(data1, data2)
+    
+    def test_concat(self):
+        self.assertEqual(select(Produto).filter(oequ(frpad(Produto.nome, '0', 13), 'Pneu aro 1500')
+        ).values(
+            fconcat('productName', Produto.nome, ' careca')
+        )[0]['productName'], 'Pneu aro 15 careca')
 
 
 class TestTransaction(unittest.TestCase):
@@ -859,6 +866,117 @@ class TestTransaction(unittest.TestCase):
         
         UnitOFWork.save()
         self.assertEqual(len(select(Pais).values(Pais.id)), 0)
+
+class TestMultiAsyncQuery(unittest.TestCase):
+    def setUp(self):
+        recreate_db()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
+        
+        Produto.clear()
+        Produto.nome.value = ' Limpador de parabrisa '
+        Produto.categoria.value = 'ZZZZ'
+        Produto.valor_unitario.value = 0
+        insert(Produto).run()
+
+        get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 13')
+        Venda.quantidade.value = 2
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 13')
+        #Venda.quantidade.value = NullValue
+        insert(Venda).run()
+    
+    async def run_select_produto(self, count):
+        data = select(Produto).values().as_dict_list()
+        self.assertEqual(len(data), 5)
+    
+    async def add_simple_select_tasks(self):
+        tasks = []
+        for a in range(1000):
+            tasks.append(asyncio.create_task(self.run_select_produto(a)))
+        
+        await asyncio.gather(*tasks)    
+
+    def test_multi_simple_select(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.add_simple_select_tasks())
+        loop.close()
+    
+    async def insert_produto(self, name, value):
+        Produto.clear()
+        Produto.nome.value = name
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = value
+        insert(Produto).run()
+
+        data = select(Produto).filter(oequ(Produto.nome, name), oequ(Produto.valor_unitario, value)).values().as_dict_list()        
+        self.assertEqual(len(data), 1)
+
+    async def add_simple_insert_tasks(self):
+        tasks = []
+        for a in range(1000):
+            tasks.append(asyncio.create_task(self.insert_produto('produto tt ' + str(a), 200 * a)))
+        
+        await asyncio.gather(*tasks)    
+    
+    def test_multi_simple_insert(self):
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.add_simple_insert_tasks())
+        #loop.close()
+
+
+class TestSetAttribute(unittest.TestCase):
+    def setUp(self):
+        recreate_db()
+    
+    def test_set_attribute_insert(self):
+        pass
+        #Produto.clear()
+        #Produto.nome= 'Pneu aro 15'
+        #Produto.categoria = 'PNEU'
+        #Produto.valor_unitario = 350.50
+        #insert(Produto).run()
+
+
+
+
+
 
 if __name__ == '__main__':
     unittest.main()
