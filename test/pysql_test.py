@@ -786,6 +786,11 @@ class TestStandardFunctions(unittest.TestCase):
             fconcat('productName', Produto.nome, ' careca')
         )[0]['productName'], 'Pneu aro 15 careca')
 
+        self.assertEqual(select(Produto).filter(oequ(frpad(Produto.nome, '0', 13), 'Pneu aro 1500')
+        ).values(
+            fconcat('productName', Produto.nome, ' careca ', 'demais')
+        )[0]['productName'], 'Pneu aro 15 careca demais')
+
 
 class TestTransaction(unittest.TestCase):
     def setUp(self):

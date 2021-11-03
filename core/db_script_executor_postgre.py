@@ -45,7 +45,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
         if auto_commit:
             self.connector.commit()
-            #self.close_connection()
+            self.close_connection()
 
 
     def execute_dml_script(self, script, params, auto_commit = False):        
@@ -55,7 +55,7 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
         if auto_commit:
             self.connector.commit()        
-            #self.close_connection()
+            self.close_connection()
 
     def execute_select_script(self, sql, params):
         self.print_log(sql)        
@@ -68,10 +68,15 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
     def commit(self):
         if self.connector:
             self.connector.commit()
-            #self.close_connection()
+            self.close_connection()
     
     def rollback(self):
-        return self.connector.rollback()
+        if self.connector:
+            result = self.connector.rollback()
+            self.close_connection()
+            return result
+        else:
+            return None
     
     def run_ddl_isolated(self, script, databasename):
         self.print_log(script)                
