@@ -433,6 +433,19 @@ class TestExecutionOnDataBase(unittest.TestCase):
         self.assertEqual(len(select(Estado).join(Pais).filter(*filtro).values(Pais.nome)), 0)
         self.assertEqual(len(select(Estado).join(Pais).filter(oequ(Pais.nome, 'Estados Unidos Da América')).values(Pais.nome)), 3)
     
+    def test_multiple_sql(self):
+        filtro = ( oequ(Pais.nome, 'Brasil'), )
+        ok = True
+        
+        for a in range(1000):
+            try:
+                data = select(Estado).join(Pais).filter(*filtro).values(Pais.nome).as_dict_list()
+                data = select(Estado).values(Estado.nome).as_dict_list()
+                data = select(Cidade).values().as_dict_list()
+            except:
+                ok = False
+        
+        self.assertEqual(ok, True)
 
 class TestManyToManyField(unittest.TestCase):
     def setUp(self):

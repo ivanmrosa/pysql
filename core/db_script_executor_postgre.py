@@ -39,31 +39,43 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
             self.connector = None
     
     def execute_ddl_script(self, script, auto_commit=False):
-        self.print_log(script)        
-        self.open_connection()
-        self.cursor.execute(script)
+        try:
+            self.print_log(script)        
+            self.open_connection()
+            self.cursor.execute(script)
 
-        if auto_commit:
-            self.connector.commit()
+            if auto_commit:
+                self.connector.commit()
+                self.close_connection()
+        except:
             self.close_connection()
+            raise
 
 
     def execute_dml_script(self, script, params, auto_commit = False):        
-        self.print_log(script)
-        self.open_connection()
-        self.cursor.execute(script, params)
+        try:
+            self.print_log(script)
+            self.open_connection()
+            self.cursor.execute(script, params)
 
-        if auto_commit:
-            self.connector.commit()        
+            if auto_commit:
+                self.connector.commit()        
+                self.close_connection()
+        except:
             self.close_connection()
+            raise
 
     def execute_select_script(self, sql, params):
-        self.print_log(sql)        
-        self.open_connection()
-        self.cursor.execute(sql, params)
-        results =  self.cursor.fetchall()
-        #self.close_connection()
-        return results
+        try:
+            self.print_log(sql)        
+            self.open_connection()
+            self.cursor.execute(sql, params)
+            results =  self.cursor.fetchall()
+            #self.close_connection()
+            return results
+        except:
+            self.close_connection()
+            raise
     
     def commit(self):
         if self.connector:
@@ -107,11 +119,3 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
     def __del__(self):        
         self.close_connection()
-
-
-#class_script_executor = None
-
-#if DB_DRIVER == POSTGRESQL:
-#    class_script_executor = PostgreScriptExecutor
-
-#ScriptExecutor = type("ScriptExecutor", (class_script_executor, ), {})
