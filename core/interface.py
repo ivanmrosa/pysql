@@ -15,9 +15,10 @@ class PySqlFieldInterface(ABC):
     def set_db_name(self, db_name):
         pass
 
-class MetaDbTable(type):
-    def __init__(self, name, bases, attr_dict):
+class MetaDbTable(type):    
+    def __init__(self, name, bases, attr_dict):        
         super().__init__(name , bases , attr_dict)
+        setattr(self, "class_name", name)
         order = 0
         for key, attr in attr_dict.items():            
             if isinstance(attr, PySqlFieldInterface):
