@@ -7,7 +7,7 @@ import inspect
 class GenericDbTable(PySqlDatabaseTableInterface):
     
     __alias = None
-    #__db_name = None
+    __db_name = None
     __pk_fields = ()
     __compound_indexes = []
 
@@ -25,8 +25,10 @@ class GenericDbTable(PySqlDatabaseTableInterface):
 
     @classmethod
     def get_db_name(cls):
-        return cls.class_name
-    
+        if not cls.__db_name and cls.class_name != "BaseDbTable":
+            cls.__db_name = cls.class_name
+        return cls.__db_name
+
     @classmethod
     def get_copy(cls, alias):
         copy = type(alias, (cls, ), {})
