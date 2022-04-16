@@ -5,12 +5,12 @@ BASE_DIR = os.getcwd()
 with open(os.path.join(BASE_DIR, 'pysql_config.json'), 'r') as f:
     DB_CONFIG = json.loads(f.read())
 
-DB_DRIVER = DB_CONFIG['driver']
-HOST = DB_CONFIG['host']
-PORT = DB_CONFIG['port']
-DATABASENAME = DB_CONFIG['databasename']
-PASSWORD = DB_CONFIG['password']
-USERNAME = DB_CONFIG['username']
+DB_DRIVER = os.getenv('driver', DB_CONFIG['driver'])
+HOST = os.getenv('host', DB_CONFIG['host'])
+PORT = os.getenv('port', DB_CONFIG['port'])
+DATABASENAME = os.getenv('databasename', DB_CONFIG['databasename'])
+PASSWORD = os.getenv('password', DB_CONFIG['password'])
+USERNAME = os.getenv('username', DB_CONFIG['username'])
 
 if 'debug' in DB_CONFIG:
     DEBUG = DB_CONFIG['debug']
