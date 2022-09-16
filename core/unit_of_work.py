@@ -4,7 +4,7 @@ class UnitOFWork:
         
 
     @classmethod
-    def discart(cls):
+    def discard(cls):
         PySqlClassGenerator.get_script_executor().rollback()
     
     @classmethod

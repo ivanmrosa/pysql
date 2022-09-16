@@ -30,11 +30,77 @@ class MetaDbTable(type):
                 order += 1
                                                             
 class PySqlDatabaseTableInterface(metaclass=MetaDbTable):    
-    def get_alias(self):
-        pass
-    def set_alias(self):
+   
+    def get_alias(cls):
         pass
 
+    def set_alias(cls, alias):
+        pass
+    
+    def get_db_name(cls):
+        pass
+        
+    def get_copy(cls, alias):
+        pass        
+    
+    def get_fields(cls):        
+        pass        
+
+    def get_field_by_db_name(cls, name):
+        pass
+    
+    def get_script_create_table(cls):
+        pass    
+    
+    def get_script_drop_table(cls, table_name=''):
+        pass
+
+    def get_script_create_pk(cls, creating_table=False):
+        pass                        
+        
+    def get_pk_fields(cls):
+        pass
+    
+    def get_scripts_indices(cls, creating_table=False):
+        pass
+
+    def get_fk_fields(cls):
+        pass    
+        
+    def get_many_to_many_fields(cls):
+        pass
+    
+    def get_scripts_fk(cls, creating_table=False):
+        pass
+
+    def get_scripts_check_constraints(cls, creating_table=False):
+        pass
+    
+    def get_script_remove_field(cls, db_field_name):                    
+        pass
+    
+    def get_script_add_field(cls, field_class):
+        pass
+
+    #@classmethod
+    #def get_script_drop_table(cls):
+    #    return 'DROP TABLE ' + cls.get_db_name()
+    
+    def compound_indexes_list(cls):
+        pass    
+    
+    def get_class_name(cls):
+        pass
+    
+    
+    def get_old_class_name(cls):
+        pass
+        
+    def get_old_db_name(cls):
+        pass
+    
+    def clear(cls):
+        pass
 class PySqlOperatorsInterface(ABC):
     def get_operator(self):
         pass

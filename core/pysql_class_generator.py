@@ -1,5 +1,5 @@
 from . pysql_config import DRIVER_CLASSES_CONFIG as driver_config, DB_DRIVER, USERNAME, DATABASENAME, PASSWORD, HOST, PORT, DEBUG
-import inspect
+from . pysql_db_tables_definitions import GenericDbTable
 
 class PySqlClassGenerator(object):
     driver = None
@@ -51,7 +51,7 @@ class PySqlClassGenerator(object):
         
         
     @classmethod
-    def get_db_table_class(cls):
+    def get_db_table_class(cls) -> GenericDbTable:
         cls.define_initial_data(DB_DRIVER)
         return cls.db_table_class
     

@@ -828,7 +828,7 @@ class TestTransaction(unittest.TestCase):
         insert(Estado).run()
         self.assertEqual(len(select(Estado).values(Estado.id)), 1)
         
-        UnitOFWork.discart()
+        UnitOFWork.discard()
         self.assertEqual(len(select(Pais).values(Pais.id)), 0)
         self.assertEqual(len(select(Estado).values(Estado.id)), 0)
     
@@ -849,7 +849,7 @@ class TestTransaction(unittest.TestCase):
         self.assertEqual(len(select(Estado).values(Estado.id)), 1)
 
         UnitOFWork.save()
-        UnitOFWork.discart()
+        UnitOFWork.discard()
         self.assertEqual(len(select(Pais).values(Pais.id)), 1)
         self.assertEqual(len(select(Estado).values(Estado.id)), 1)
 
@@ -866,7 +866,7 @@ class TestTransaction(unittest.TestCase):
 
         self.assertEqual(len(select(Pais).values(Pais.id)), 0)
 
-        UnitOFWork.discart()
+        UnitOFWork.discard()
         self.assertEqual(len(select(Pais).values(Pais.id)), 1)
         
     def test_commit_delete(self):

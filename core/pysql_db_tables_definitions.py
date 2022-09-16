@@ -30,7 +30,7 @@ class GenericDbTable(PySqlDatabaseTableInterface):
         return cls.__db_name
 
     @classmethod
-    def get_copy(cls, alias):
+    def get_copy(cls, alias) -> PySqlDatabaseTableInterface:
         copy = type(alias, (cls, ), {})
         copy.set_alias(alias)
         copy.db_name = cls.get_db_name()        
