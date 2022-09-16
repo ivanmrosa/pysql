@@ -70,10 +70,10 @@ class GenericOor(PySqlOperatorsInterface, GenricBaseOperator):
         count = 0
         for condition in self.list_of_comparations:
             sql += condition.get_sql_text(value_as_parameter,
-                                          list_of_parameters) + ' AND '
+                                          list_of_parameters) + ' OR '
             count += 1
 
-        sql = sql[:-5]
+        sql = sql[:-4]
 
         if count > 1:
             sql = '(' + sql + ')'
