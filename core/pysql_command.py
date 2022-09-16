@@ -58,3 +58,7 @@ def delete(table):
         else:
             raise Exception('Not a valid class given.')
 
+
+def runSql(sql, fieldNames, params=[]):
+    sql_command = PySqlClassGenerator.get_command_open_sql_object()
+    return sql_command.execute(sql, params, fieldNames)

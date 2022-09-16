@@ -278,7 +278,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
         )        
         estados = sql_obj.values(Estado.nome, Pais.nome)        
         for estado in estados:            
-            self.assertIn(estado[0], ('California', 'Minas Gerais'))
+            self.assertIn(estado[0], ('California', 'Minas Gerais', 'São Paulo'))
             if estado[0] == 'California':
                 self.assertEqual(estado[1], 'Estados Unidos Da América')
             else:    
@@ -991,7 +991,71 @@ class TestSetAttribute(unittest.TestCase):
         #Produto.valor_unitario = 350.50
         #insert(Produto).run()
 
+class TestRunQuerStrings(unittest.TestCase):
+    def setUp(self) -> None:
+        recreate_db()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
 
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
+        
+        Produto.clear()
+        Produto.nome.value = ' Limpador de parabrisa '
+        Produto.categoria.value = 'ZZZZ'
+        Produto.valor_unitario.value = 0
+        insert(Produto).run()
+
+        get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 15')
+        Venda.quantidade.value = 4
+        insert(Venda).run()
+
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Pneu aro 13')
+        Venda.quantidade.value = 2
+        insert(Venda).run()
+        
+        Venda.clear()
+        Venda.produto.value = get_id_produto('Roda de aço aro 13')
+        #Venda.quantidade.value = NullValue
+        insert(Venda).run()
+
+
+    def test_run_simple_select(self):
+        data = runSql("select * from produto", ["id", "nome", "categoria"] )
+        self.assertEqual(len(data), 5)
+                
+    def test_run_select_with_parameters(self):
+        data = runSql("select * from produto where nome = %s",\
+            ["id", "nome", "categoria", "valor_unitario"], ['Pneu aro 13'] )
+        self.assertEqual(len(data), 1)
+        self.assertEqual(float(data[0]["valor_unitario"]), 199.99)
 
 
 

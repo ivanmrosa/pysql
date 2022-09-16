@@ -233,8 +233,18 @@ class GenericBaseDmlSelect(GenericBaseDmlScripts):
     def values(self, *fields):
         sql, fields_names = self.get_sql_and_fields_names(*fields)
         
-        simple_data = self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
-        friendly_data = FriendlyData(simple_data,  fields_names)
+        #simple_data = self.script_executor.execute_select_script(sql=sql, params=tuple(self.list_params))
+        #friendly_data = FriendlyData(simple_data,  fields_names)
+        #return friendly_data
+
+        return SelectExecutor(self.script_executor).execute(sql=sql, params=tuple(self.list_params),\
+            listOfFieldNames=fields_names)
+
+class SelectExecutor(DmlBase):
+    
+    def execute(self, sql, params, listOfFieldNames):
+        simple_data = self.script_executor.execute_select_script(sql=sql, params=tuple(params))
+        friendly_data = FriendlyData(simple_data,  listOfFieldNames)
         return friendly_data
 
 

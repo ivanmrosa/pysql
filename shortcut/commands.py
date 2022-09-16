@@ -1,1 +1,1 @@
-from core.pysql_command import select, insert, update, delete
+from core.pysql_command import select, insert, update, delete, runSql

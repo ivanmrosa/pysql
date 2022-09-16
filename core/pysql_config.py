@@ -35,7 +35,7 @@ from . pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, Gene
 from . pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
     GenericBaseDmlSelectSqlServer,  GenericBaseDmlSelectSqlite,  GenericBaseDmlInsertPostgre, GenericBaseDmlUpdatePostgre, GenericBaseDmlUpdateMySql, \
     GenericBaseDmlUpdateOracle, GenericBaseDmlUpdateSqlServer, GenericBaseDmlInsertSqlite, GenericBaseDmlUpdateSqlite, GenericBaseDmlDeletePostgre, GenericBaseDmlDeleteMySql, \
-    GenericBaseDmlDeleteOracle, GenericBaseDmlDeleteSqlServer, GenericBaseDmlDeleteSqlite
+    GenericBaseDmlDeleteOracle, GenericBaseDmlDeleteSqlServer, GenericBaseDmlDeleteSqlite, SelectExecutor
 
 from . pysql_functions_config import PysqlFunctionsConfigPostgre, PysqlFunctionsConfigOracle, PysqlFunctionsConfigSqlServer, PysqlFunctionsConfigMySql, PysqlFunctionsConfigSqlite
 
@@ -71,6 +71,7 @@ DRIVER_CLASSES_CONFIG = {
        },
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectPostgre,
+          'open_select_script': SelectExecutor,
           'insert_script': GenericBaseDmlInsertPostgre,
           'update_script': GenericBaseDmlUpdatePostgre,
           'delete_script': GenericBaseDmlDeletePostgre
@@ -114,6 +115,7 @@ DRIVER_CLASSES_CONFIG = {
        },
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectSqlite,
+          'open_select_script': SelectExecutor,
           'insert_script': GenericBaseDmlInsertSqlite,
           'update_script': GenericBaseDmlUpdateSqlite,
           'delete_script': GenericBaseDmlDeleteSqlite
