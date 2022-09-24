@@ -132,7 +132,8 @@ def flpad(field, complete_with, size, alias = ''):
 def pagination(sql_object, limit, page):
     text_function = PySqlClassGenerator.get_sql_functions_config_class().pagination()
     if limit and page:
-       sql_object.sql_script_pagination += text_function.format(LIMIT=limit, OFFSET=page)
+        pg = (int(page) - 1) * int(limit)
+        sql_object.sql_script_pagination += text_function.format(LIMIT=limit, OFFSET=pg)
     elif limit:
         sql_object.sql_script_pagination += text_function.format(LIMIT=limit, OFFSET=0)
     elif page:

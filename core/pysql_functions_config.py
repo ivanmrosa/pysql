@@ -80,7 +80,7 @@ class PysqlFunctionsConfig(object):
     
     @staticmethod
     def pagination():
-        return " LIMIT {LIMIT} OFFSET {OFFSET} "  
+        return " LIMIT {LIMIT} OFFSET {OFFSET}"  
 
 
 class PysqlFunctionsConfigPostgre(PysqlFunctionsConfig):
