@@ -35,6 +35,7 @@ class Field(PySqlFieldInterface):
         self.__temporary_text_function = ''
         self.__used_in_aggregated_function = False
         self.__is_deep_copy = False
+        self.ordering_by_desc = False
 
         self._property_name = ''
 
@@ -131,6 +132,10 @@ class Field(PySqlFieldInterface):
     
     def is_used_in_aggregated_function(self):
         return self.__used_in_aggregated_function
+    
+    def setOrderingByDesc(self, orderingByDesc):
+        self.ordering_by_desc = orderingByDesc
+        return self
         
     def get_field_configureted_for_functions(self, text_function, alias, is_aggregated):
         ''' pass function using the pattern {field} where the field should be used

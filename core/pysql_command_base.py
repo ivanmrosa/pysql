@@ -222,7 +222,9 @@ class GenericBaseDmlSelect(GenericBaseDmlScripts):
     
     def order_by(self, *fields):
         for f in fields:            
-            self.script_order_by += f.get_sql_for_field(use_alias=False) + ', '
+            desc_ordering = ' Desc 'if f.ordering_by_desc else ''
+            self.script_order_by += f.get_sql_for_field(use_alias=False) + desc_ordering + ', '
+            f.setOrderingByDesc(False)
             if not f in self.all_fields:
                 self.all_fields.append(f)
         
