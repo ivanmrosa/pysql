@@ -183,11 +183,12 @@ class TestExecutionOnDataBase(unittest.TestCase):
     def setUp(self):
         #base = os.path.join(os.getcwd(), 'test/') 
         #manage_db(clear_cache_param='RECREATEDB', ask_question=False, base_dir= base, models_package='test.models')
-        recreate_db()
+        recreate_db()        
         Pais.clear()
         Pais.nome.value = 'Brasil'
         Pais.codigo.value = '0055'
         insert(Pais).run()
+        
 
         pais_id = select(Pais).values(Pais.id)[0][0]
         Estado.clear()
@@ -227,7 +228,7 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Pais.clear()
         Pais.nome.value = 'Argentina'
         insert(Pais).run()
-
+        
         Cidade.clear()
         Cidade.nome.value = 'Belo Horizonte'
         Cidade.estado.value = select(Estado).filter(oequ(Estado.sigla, 'MG')).values(Estado.id).get_first()["id"]
@@ -1051,12 +1052,18 @@ class TestRunQuerStrings(unittest.TestCase):
         data = runSql("select * from produto", ["id", "nome", "categoria"] )
         self.assertEqual(len(data), 5)
                 
-    def test_run_select_with_parameters(self):
-        data = runSql("select * from produto where nome = %s",\
+    def test_run_select_with_parameter(self):
+        data = runSql("select * from produto where nome = ::s",\
             ["id", "nome", "categoria", "valor_unitario"], ['Pneu aro 13'] )
         self.assertEqual(len(data), 1)
         self.assertEqual(float(data[0]["valor_unitario"]), 199.99)
 
+    def test_run_select_with_parameters(self):
+        data = runSql("select * from produto where nome in (::s, ::s) ",\
+            ["id", "nome", "categoria", "valor_unitario"], ['Pneu aro 13', 'Roda de aço aro 15'] )
+        self.assertEqual(len(data), 2)
+        self.assertEqual(float(data[0]["valor_unitario"]), 199.99)
+        self.assertEqual(float(data[1]["valor_unitario"]), 950)
 
 
 

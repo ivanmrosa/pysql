@@ -58,7 +58,7 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
         self.open_connection()
         self.cursor.execute(sql, params)
         results =  self.cursor.fetchall()
-        self.close_connection()
+        #self.close_connection()
         return results
     
     def commit(self):
@@ -86,6 +86,13 @@ class SqliteScriptExecutor(PySqlRunScriptInterface):
         finally:
             self.close_connection()
             
+    def rollback(self):
+        if self.connector:
+            result = self.connector.rollback()
+            self.close_connection()
+            return result
+        else:
+            return None
                 
     def drop_database(self):
         self.close_connection()

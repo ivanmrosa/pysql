@@ -61,4 +61,6 @@ def delete(table):
 
 def runSql(sql, fieldNames, params=[]):
     sql_command = PySqlClassGenerator.get_command_open_sql_object()
-    return sql_command.execute(sql, params, fieldNames)
+    
+    return sql_command.execute(sql.replace('::s', PySqlClassGenerator.get_command_sql_object().get_param_representation()),\
+        params, fieldNames)
