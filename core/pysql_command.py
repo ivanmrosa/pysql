@@ -20,7 +20,7 @@ def update(table):
 
 def insert(table):
     insert_object = PySqlClassGenerator.get_command_insert_object()    
-    if inspect.isclass(table) and issubclass(table, PySqlDatabaseTableInterface):        
+    if  isinstance(table, PySqlDatabaseTableInterface) or (inspect.isclass(table) and issubclass(table, PySqlDatabaseTableInterface)):        
         insert_object.table = table
         insert_object.select_executor = select
         insert_object.oequ_clause = oequ

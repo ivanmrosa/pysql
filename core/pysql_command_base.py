@@ -277,7 +277,7 @@ class GenericBaseDmlInsert(GenericBaseDmlInsertUpdate):
 
     def get_script(self):
         self._many_to_many_insert = ()
-        if issubclass(self.table, PySqlDatabaseTableInterface):                        
+        if isinstance(self.table, PySqlDatabaseTableInterface) or (inspect.isclass(self.table) and issubclass(self.table, PySqlDatabaseTableInterface)):                        
             self.params = ()        
 
             script_fields = 'INSERT INTO ' + self.table.get_db_name() + '('
@@ -485,7 +485,7 @@ class GenericBaseDmlUpdateSqlite(GenericBaseDmlUpdate):
 
     def get_script(self):
         script = ''
-        if issubclass(self.table, PySqlDatabaseTableInterface): 
+        if (isinstance(self.table, PySqlDatabaseTableInterface)) or (inspect.isclass(self.table) and issubclass(self.table, PySqlDatabaseTableInterface)): 
             if self.script_from:
                 self.execute_using_sql = True
                 self.add_base_join(self.table)                

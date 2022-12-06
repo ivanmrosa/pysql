@@ -1,4 +1,5 @@
 from . interface import PySqlDatabaseTableInterface
+from . interface import PySqlFieldInterface
 #from db_types import  
 #from db_types import ForeignKey
 import inspect
@@ -10,6 +11,10 @@ class GenericDbTable(PySqlDatabaseTableInterface):
     __db_name = None
     __pk_fields = ()
     __compound_indexes = []
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.clear()
 
     @classmethod
     def get_alias(cls):
@@ -241,7 +246,13 @@ class GenericDbTable(PySqlDatabaseTableInterface):
                 field.value = None
             else:
                 field.value = []
-
+    
+    def __setattr__(self, __name: str, __value) -> None:        
+        field = getattr(self, __name, None)
+        if field and inspect.isclass(type(field)) and issubclass(type(field), PySqlFieldInterface):
+            field.value = __value
+        else:
+            return super().__setattr__(__name, __value)
 
 class PostgreDbTable(GenericDbTable):
     pass

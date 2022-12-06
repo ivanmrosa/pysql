@@ -448,6 +448,14 @@ class TestExecutionOnDataBase(unittest.TestCase):
         
         self.assertEqual(ok, True)
 
+    def test_insert(self):
+        pais = Pais()        
+        pais.nome = 'Coreia do Sul'
+        pais.codigo = '0099'
+        insert(pais).run()        
+        pais = select(Pais).filter(oequ(Pais.nome, 'Coreia do Sul')).values().get_first()
+        self.assertEqual(pais["nome"], 'Coreia do Sul')
+
 class TestManyToManyField(unittest.TestCase):
     def setUp(self):
         recreate_db()
@@ -901,17 +909,17 @@ class TestMultiAsyncQuery(unittest.TestCase):
         Produto.valor_unitario.value = 199.99
         insert(Produto).run()
 
-        Produto.clear()
-        Produto.nome.value = 'Roda de aço aro 13'
-        Produto.categoria.value = 'RODA'
-        Produto.valor_unitario.value = 540
-        insert(Produto).run()
+        produto = Produto()
+        produto.nome = 'Roda de aço aro 13'
+        produto.categoria = 'RODA'
+        produto.valor_unitario = 540
+        insert(produto).run()
 
-        Produto.clear()
-        Produto.nome.value = 'Roda de aço aro 15'
-        Produto.categoria.value = 'RODA'
-        Produto.valor_unitario.value = 950
-        insert(Produto).run()
+        produto = Produto()
+        produto.nome = 'Roda de aço aro 15'
+        produto.categoria = 'RODA'
+        produto.valor_unitario = 950
+        insert(produto).run()
         
         Produto.clear()
         Produto.nome.value = ' Limpador de parabrisa '
@@ -958,11 +966,11 @@ class TestMultiAsyncQuery(unittest.TestCase):
         loop.close()
     
     async def insert_produto(self, name, value):
-        Produto.clear()
-        Produto.nome.value = name
-        Produto.categoria.value = 'PNEU'
-        Produto.valor_unitario.value = value
-        insert(Produto).run()
+        produto = Produto()
+        produto.nome = name
+        produto.categoria = 'PNEU'
+        produto.valor_unitario = value
+        insert(produto).run()
 
         data = select(Produto).filter(oequ(Produto.nome, name), oequ(Produto.valor_unitario, value)).values().as_dict_list()        
         self.assertEqual(len(data), 1)
@@ -1027,10 +1035,10 @@ class TestRunQuerStrings(unittest.TestCase):
 
         get_id_produto = lambda nome_prod : select(Produto).filter(oequ(Produto.nome, nome_prod)).values(Produto.id)[0]['id']
         
-        Venda.clear()
-        Venda.produto.value = get_id_produto('Pneu aro 15')
-        Venda.quantidade.value = 4
-        insert(Venda).run()
+        venda = Venda()
+        venda.produto = get_id_produto('Pneu aro 15')
+        venda.quantidade = 4
+        insert(venda).run()
         
         Venda.clear()
         Venda.produto.value = get_id_produto('Roda de aço aro 15')

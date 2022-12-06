@@ -189,7 +189,7 @@ class Field(PySqlFieldInterface):
     @value.setter
     def value(self, val):
         self._value = val
-
+    
     #def __get__(self, instance, owner):
     #    if instance:
     #        return instance.value
