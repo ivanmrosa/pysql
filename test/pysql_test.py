@@ -1097,6 +1097,21 @@ class TestMigrations(unittest.TestCase):
         nome = select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values().get_first()['NomeAlternativo']
         self.assertEqual(nome, 'Ala')
         setattr(Produto, 'NomeAlternativo', None)
-
+    
+class TestFirstMigration(unittest.TestCase):
+    
+    def test_first_migration(self):
+        base = os.path.join(os.getcwd(), 'test/')
+        bck_path = os.path.join(base, 'models', 'bck')
+        recreate_db()
+        bck_path_renamed = os.path.join(base, 'models', 'bck_1')
+        os.rename(bck_path_renamed, bck_path)
+        delete(PySQLStructure).run()
+        delete(PySQLMigration).run()        
+        manage_db(clear_cache_param='', ask_question=False, base_dir= base, models_package='test.models')
+        data = select(Venda).values()
+        self.assertGreater(len(select(PySQLStructure).values()), 2)
+        os.rename(bck_path, bck_path_renamed)
+        
 if __name__ == '__main__':
     unittest.main()

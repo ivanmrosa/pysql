@@ -1,0 +1,1 @@
+{"table_name": "PySQLMigration", "db_table_name": "PySQLMigration", "primary_key": {"name": "PK_PySQLMigration", "fields": ["id"]}, "index": {}, "foreign_key": {}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "Date", "type": "DateTimeField"}, {"name": "Description", "type": "VarcharField"}], "check_constraints": {}}

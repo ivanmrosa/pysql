@@ -5,8 +5,8 @@ try:
     from core.pysql_class_generator import PySqlClassGenerator
     from core.pysql_command import select, insert
     from setup.MigrationsModels.PySQLStructure import PySQLStructure, PySQLMigration
-    from core.pysql_functions import fmax
-    from core.sql_operators import oequ
+    from core.pysql_functions import fmax, fcount
+    from core.sql_operators import oequ, onin
     from core.unit_of_work import UnitOFWork
 except: #fucking problems to integrate in other project
     from pysql.core.interface import PySqlDatabaseTableInterface
@@ -19,6 +19,8 @@ except: #fucking problems to integrate in other project
 #BASE_DIR = os.getcwd()
 #MODEL_DIR = os.path.join(BASE_DIR, 'models')
 #MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')
+
+
 ''' 
  table_structure 
  {
@@ -31,10 +33,34 @@ except: #fucking problems to integrate in other project
  }
 '''
 
-def create_migration_structure() -> int:
+def insert_first_migrations(model_backup_dir: str):
+    if not os.path.exists(model_backup_dir):
+        return
+    count = select(PySQLStructure).filter(onin(PySQLStructure.ObjectName, 'PySQLStructure', 'PySQLMigration')).\
+        values(fcount(alias='count')).get_first()['count']
+    
+    if count == 0:
+        files = os.listdir(model_backup_dir)
+        migration = None
+        if len(files) > 0:
+            migration = create_new_migration('Restoring from local folder.')
+        for file in files:
+            with open(os.path.join(model_backup_dir, file), 'r') as f:
+                structure = f.read()
+                table_name = json.loads(structure)['table_name']
+                tableStructure = PySQLStructure()
+                tableStructure.Migration = migration
+                tableStructure.ObjectName = table_name
+                tableStructure.Structure = structure
+                insert(tableStructure).run()
+
+
+
+def create_migration_structure(model_backup_dir : str) -> int:    
     modelsDirectory = os.path.join(os.path.dirname(__file__), 'MigrationsModels')
     tables = get_list_of_tables(modelsDirectory, 'setup.MigrationsModels')
     create_tables(tables, None)
+    insert_first_migrations(model_backup_dir)
 
 
 def create_new_migration(description : str) -> int:
@@ -92,7 +118,7 @@ def get_table_saved_structure(class_to_get):
 
 def save_table_structure(class_to_save, migration_id):   
     pk_data = class_to_save.get_script_create_pk()
-    data = {"table_name": class_to_save.__name__}
+    data = {"table_name": class_to_save.__name__, "db_table_name": class_to_save.get_db_name()}
     data["primary_key"] = {}
     data["primary_key"]["name"] = pk_data[0] 
     data["primary_key"]["fields"] = [field.get_db_name() for field in pk_data[2]]
@@ -200,7 +226,8 @@ def create_database(models_directory, package, description):
         executor = PySqlClassGenerator.get_script_executor()  
         executor.create_database()
         print('database created.')
-        create_migration_structure()
+        model_backup_dir = os.path.join(models_directory, 'bck')     
+        create_migration_structure(model_backup_dir)
         migrationId = create_new_migration(description)
         tables = get_list_of_tables(models_directory, package)       
         create_tables(list_of_tables=tables, migration_id=migrationId)  
@@ -251,11 +278,8 @@ def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_packag
     MODEL_DIR = os.path.join(BASE_DIR, 'models')
     MODEL_BACKUP = os.path.join(MODEL_DIR, 'bck')     
 
-
-    if clear_cache_param.upper() == 'CLEARCACHE': 
-        clear_cache(True, MODEL_BACKUP)
-    elif clear_cache_param == 'RECREATEDB':
-        clear_cache(False, MODEL_BACKUP)
+    if clear_cache_param == 'RECREATEDB':
+        clear_cache(ask=ask_question, model_backup_directory=MODEL_BACKUP)
         drop_database(ask_question)
 
     create_database(MODEL_DIR, models_package, description)

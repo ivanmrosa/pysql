@@ -1,0 +1,1 @@
+{"table_name": "Cidade", "db_table_name": "Cidade", "primary_key": {"name": "PK_Cidade", "fields": ["id"]}, "index": {}, "foreign_key": {"FK_Cid_Est_Estado_id": {"reference": ""}}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "Estado_id", "type": "IntegerField"}, {"name": "nome", "type": "VarcharField"}], "check_constraints": {}}
