@@ -68,17 +68,7 @@ def get_list_of_tables(models_directory, models_package):
 def get_table_saved_structure(class_to_get):
         
     table_data =  None
-    # path = ''
-    # #get using the actual name.     
-    # if os.path.exists(os.path.join(model_backup_directory, class_to_get.__name__ + '.json')):
-    #     path = os.path.join(model_backup_directory, class_to_get.__name__ + '.json') 
-    # elif class_to_get.get_old_class_name() and os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json')):
-    #     path = os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json'))
-    
-    # if path:
-    #     with open(file=path, mode='r') as f:            
-    #         table_data = f.read()
-    #         table_data = json.loads(table_data)
+
     try:
         migration = select(PySQLStructure).filter(oequ(PySQLStructure.ObjectName, class_to_get.__name__)).\
             values(fmax(PySQLStructure.Id, 'id')).get_first()
@@ -100,13 +90,7 @@ def get_table_saved_structure(class_to_get):
 
     return table_data
 
-def save_table_structure(class_to_save, migration_id):
-    # if not model_backup_directory:
-    #     return
-    # if os.path.exists(os.path.join(model_backup_directory, class_to_save.__name__ + '.json')):
-    #     os.rename(os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), 
-    #         os.path.join(model_backup_directory, class_to_save.__name__ + '_old.json'))
-    
+def save_table_structure(class_to_save, migration_id):   
     pk_data = class_to_save.get_script_create_pk()
     data = {"table_name": class_to_save.__name__}
     data["primary_key"] = {}
@@ -140,12 +124,6 @@ def save_table_structure(class_to_save, migration_id):
     insert(structure).run()
 
     
-    # if model_backup_directory and not os.path.exists(model_backup_directory):
-    #     os.mkdir(model_backup_directory)
-
-    # with open(file=os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), mode='w', encoding="utf-8") as f:
-    #     f.write(json.dumps(data))
-
 def create_tables(list_of_tables, migration_id):
     executor = PySqlClassGenerator.get_script_executor()
     table_data = None
@@ -209,7 +187,6 @@ def create_tables(list_of_tables, migration_id):
             if not table_data or not fk_script[0] in table_data["foreign_key"]:                
                 executor.execute_ddl_script(fk_script[1])
         
-        #executor.execute_ddl_script(field.get_script())
     
     executor.commit()
     if not migration_id:
