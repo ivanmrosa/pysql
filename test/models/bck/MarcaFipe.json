@@ -1,1 +1,0 @@
-{"table_name": "MarcaFipe", "primary_key": {"name": "PK_marca_fipe", "fields": ["id"]}, "index": {"IX_marca_fipe_nome_fipe": {"unique": false, "fields": ["nome_fipe"]}}, "foreign_key": {}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "nome_fipe", "type": "VarcharField"}], "check_constraints": {}}

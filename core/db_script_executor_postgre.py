@@ -40,6 +40,8 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
     
     def execute_ddl_script(self, script, auto_commit=False):
         try:
+            if not script:
+                return
             self.print_log(script)        
             self.open_connection()
             self.cursor.execute(script)
@@ -54,6 +56,9 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
     def execute_dml_script(self, script, params, auto_commit = False):        
         try:
+            if not script:
+                return
+
             self.print_log(script)
             self.open_connection()
             self.cursor.execute(script, params)
@@ -67,6 +72,9 @@ class PostgreScriptExecutor(PySqlRunScriptInterface):
 
     def execute_select_script(self, sql, params):
         try:
+            if not sql:
+                return None
+
             self.print_log(sql)        
             self.open_connection()
             self.cursor.execute(sql, params)

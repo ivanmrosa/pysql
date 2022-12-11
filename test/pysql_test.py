@@ -1,12 +1,8 @@
 import unittest, os
+import datetime
+import asyncio
+
 from core.pysql_config import DB_DRIVER
-from core.sql_db_tables import BaseDbTable
-
-#from core.sql_operators import *
-#from core.pysql_command import select, insert, update, delete
-#from core.pysql_functions import fsum, favg, fcount, fmax, fmin, fupper, flower, fsubstr, ftrim, fltrim, frtrim, flength, freplace, finstr, \
-#    fconcat, fdistinct, fconcat, frpad, flpad, pagination, limit
-
 from shortcut.operators import *
 from shortcut.commands import *
 from shortcut.functions import *
@@ -15,14 +11,12 @@ from test.models.cidade import Cidade
 from test.models.estado import Estado
 from test.models.pais import Pais
 from test.models.modelo_fipe import ModeloFipe
-from test.models.modelo_veiculo import ModeloVeiculo
 from test.models.mercadoria import Produto, Venda, VendaMultipla
 from test.models.fonte_de_anuncio import FonteDeAnuncio
+from setup.MigrationsModels.PySQLStructure import PySQLStructure, PySQLMigration
 from setup.pysql_setup import manage_db
-from core.db_types import NullValue
 from core.unit_of_work import UnitOFWork
-import datetime
-import asyncio
+from core.db_types import VarcharField
 
 
 
@@ -189,7 +183,6 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Pais.codigo.value = '0055'
         insert(Pais).run()
         
-
         pais_id = select(Pais).values(Pais.id)[0][0]
         Estado.clear()
         Estado.nome.value = 'São Paulo'
@@ -1073,7 +1066,37 @@ class TestRunQuerStrings(unittest.TestCase):
         self.assertEqual(float(data[0]["valor_unitario"]), 199.99)
         self.assertEqual(float(data[1]["valor_unitario"]), 950)
 
+class TestMigrations(unittest.TestCase):
+    def setUp(self) -> None:
+        recreate_db()
+    
+    def test_store_migrations_on_database(self):
+        data = select(PySQLMigration).values()
+        self.assertGreater(len(data), 0)
 
+    def test_store_pystructure_on_database(self):
+        data = select(PySQLStructure).values()
+        self.assertGreater(len(data), 0)
+    
+    def test_change_table_structure(self):
+        base = os.path.join(os.getcwd(), 'test/') 
+        NomeAlternativo = VarcharField(size=50)
+        NomeAlternativo.set_db_name('NomeAlternativo')
+        NomeAlternativo.set_owner(Produto)
+        setattr(Produto, 'NomeAlternativo', NomeAlternativo)        
+        manage_db(clear_cache_param='', ask_question=False, base_dir= base, models_package='test.models')
+
+        produto = Produto()
+        produto.nome = ' Limpador de parabrisa '
+        produto.categoria = 'ZZZZ'
+        produto.valor_unitario = 0
+        produto.NomeAlternativo = 'Ala'
+        
+        insert(produto).run()
+
+        nome = select(Produto).filter(oequ(Produto.nome, ' Limpador de parabrisa ')).values().get_first()['NomeAlternativo']
+        self.assertEqual(nome, 'Ala')
+        setattr(Produto, 'NomeAlternativo', None)
 
 if __name__ == '__main__':
     unittest.main()

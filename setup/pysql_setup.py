@@ -3,9 +3,17 @@ from importlib import import_module
 try:
     from core.interface import PySqlDatabaseTableInterface
     from core.pysql_class_generator import PySqlClassGenerator
+    from core.pysql_command import select, insert
+    from setup.MigrationsModels.PySQLStructure import PySQLStructure, PySQLMigration
+    from core.pysql_functions import fmax
+    from core.sql_operators import oequ
+    from core.unit_of_work import UnitOFWork
 except: #fucking problems to integrate in other project
     from pysql.core.interface import PySqlDatabaseTableInterface
     from pysql.core.pysql_class_generator import PySqlClassGenerator
+    from pysql.core.pysql_command import select, insert
+    from pysql.setup.MigrationsModels.PySQLStructure import PySQLStructure, PySQLMigration
+    from pysql.core.unit_of_work import UnitOFWork
 
 
 #BASE_DIR = os.getcwd()
@@ -22,6 +30,18 @@ except: #fucking problems to integrate in other project
      "check_constraints": {"name_check": "script"}
  }
 '''
+
+def create_migration_structure() -> int:
+    modelsDirectory = os.path.join(os.path.dirname(__file__), 'MigrationsModels')
+    tables = get_list_of_tables(modelsDirectory, 'setup.MigrationsModels')
+    create_tables(tables, None)
+
+
+def create_new_migration(description : str) -> int:
+    migration = PySQLMigration()
+    migration.Description = description    
+    insert(migration).run()
+    return select(PySQLMigration).values(fmax(PySQLMigration.Id)).get_first()["Id"]
 
 def get_list_of_tables(models_directory, models_package):           
     list_of_tables = []
@@ -45,26 +65,47 @@ def get_list_of_tables(models_directory, models_package):
 
     return list_of_tables
 
-def get_table_saved_structure(class_to_get, model_backup_directory):
+def get_table_saved_structure(class_to_get):
+        
     table_data =  None
-    path = ''
-    #get using the actual name.     
-    if os.path.exists(os.path.join(model_backup_directory, class_to_get.__name__ + '.json')):
-        path = os.path.join(model_backup_directory, class_to_get.__name__ + '.json') 
-    elif class_to_get.get_old_class_name() and os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json')):
-        path = os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json'))
+    # path = ''
+    # #get using the actual name.     
+    # if os.path.exists(os.path.join(model_backup_directory, class_to_get.__name__ + '.json')):
+    #     path = os.path.join(model_backup_directory, class_to_get.__name__ + '.json') 
+    # elif class_to_get.get_old_class_name() and os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json')):
+    #     path = os.path.exists(os.path.join(model_backup_directory, class_to_get.get_old_class_name() + '.json'))
     
-    if path:
-        with open(file=path, mode='r') as f:            
-            table_data = f.read()
-            table_data = json.loads(table_data)
-    
+    # if path:
+    #     with open(file=path, mode='r') as f:            
+    #         table_data = f.read()
+    #         table_data = json.loads(table_data)
+    try:
+        migration = select(PySQLStructure).filter(oequ(PySQLStructure.ObjectName, class_to_get.__name__)).\
+            values(fmax(PySQLStructure.Id, 'id')).get_first()
+        
+        if not migration['id']:
+            migration = select(PySQLStructure).filter(oequ(PySQLStructure.ObjectName, class_to_get.get_old_class_name())).\
+                values(fmax(PySQLStructure.Id, 'id')).get_first()
+            
+        if not migration['id']:
+            return None
+        
+        table_data = json.loads(select(PySQLStructure).\
+            filter(oequ(PySQLStructure.Id, migration['id'])).\
+            values(PySQLStructure.Structure).get_first()['Structure'])
+    except:
+        if class_to_get.__name__ in ('PySQLStructure', 'PySQLMigration'):
+            return None
+        raise
+
     return table_data
 
-def save_table_structure(class_to_save, model_backup_directory):
-    if os.path.exists(os.path.join(model_backup_directory, class_to_save.__name__ + '.json')):
-        os.rename(os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), 
-            os.path.join(model_backup_directory, class_to_save.__name__ + '_old.json'))
+def save_table_structure(class_to_save, migration_id):
+    # if not model_backup_directory:
+    #     return
+    # if os.path.exists(os.path.join(model_backup_directory, class_to_save.__name__ + '.json')):
+    #     os.rename(os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), 
+    #         os.path.join(model_backup_directory, class_to_save.__name__ + '_old.json'))
     
     pk_data = class_to_save.get_script_create_pk()
     data = {"table_name": class_to_save.__name__}
@@ -92,20 +133,27 @@ def save_table_structure(class_to_save, model_backup_directory):
     for check in checks:
         data["check_constraints"].update({check[0] : check[1]})
     
-    if not os.path.exists(model_backup_directory):
-        os.mkdir(model_backup_directory)
+    structure = PySQLStructure()
+    structure.Migration = migration_id
+    structure.ObjectName = class_to_save.__name__
+    structure.Structure = json.dumps(data)
+    insert(structure).run()
 
-    with open(file=os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), mode='w', encoding="utf-8") as f:
-        f.write(json.dumps(data))
+    
+    # if model_backup_directory and not os.path.exists(model_backup_directory):
+    #     os.mkdir(model_backup_directory)
 
-def create_tables(list_of_tables, model_backup_directory):
+    # with open(file=os.path.join(model_backup_directory, class_to_save.__name__ + '.json'), mode='w', encoding="utf-8") as f:
+    #     f.write(json.dumps(data))
+
+def create_tables(list_of_tables, migration_id):
     executor = PySqlClassGenerator.get_script_executor()
     table_data = None
     fields = []
     old_fields = []
     for table in list_of_tables:
         table_data = None
-        table_data = get_table_saved_structure(table, model_backup_directory)
+        table_data = get_table_saved_structure(table)
         
         if not table_data:            
             executor.execute_ddl_script(table.get_script_create_table())
@@ -149,10 +197,13 @@ def create_tables(list_of_tables, model_backup_directory):
         for check_script in table.get_scripts_check_constraints(False):
             if not table_data or not check_script[0] in table_data["check_constraints"]:
                 executor.execute_ddl_script(check_script[1])
+        
+        if table.__name__ in ('PySQLStructure', 'PySQLMigration'):  
+            executor.commit()
     
     for table in list_of_tables:
         table_data = None
-        table_data = get_table_saved_structure(table, model_backup_directory)
+        table_data = get_table_saved_structure(table)
                                 
         for fk_script in table.get_scripts_fk(False):
             if not table_data or not fk_script[0] in table_data["foreign_key"]:                
@@ -161,17 +212,26 @@ def create_tables(list_of_tables, model_backup_directory):
         #executor.execute_ddl_script(field.get_script())
     
     executor.commit()
+    if not migration_id:
+        migration_id = create_new_migration('Initial creation.')
     for table in list_of_tables:
-        save_table_structure(table, model_backup_directory)
+        save_table_structure(table, migration_id)
 
 
-def create_database(models_directory, model_backup_directory, package):
-    executor = PySqlClassGenerator.get_script_executor()  
-    executor.create_database()
-    print('database created.')
-    tables = get_list_of_tables(models_directory, package)       
-    create_tables(list_of_tables=tables, model_backup_directory=model_backup_directory)  
-    print('process concluded.')   
+def create_database(models_directory, package, description):
+    try:
+        executor = PySqlClassGenerator.get_script_executor()  
+        executor.create_database()
+        print('database created.')
+        create_migration_structure()
+        migrationId = create_new_migration(description)
+        tables = get_list_of_tables(models_directory, package)       
+        create_tables(list_of_tables=tables, migration_id=migrationId)  
+        print('process concluded.')   
+        UnitOFWork.save()
+    except:
+        UnitOFWork.discard()
+        raise
 
 def drop_database(ask_question='y'):
     yes_no = 'y'
@@ -181,7 +241,7 @@ def drop_database(ask_question='y'):
         executor = PySqlClassGenerator.get_script_executor()  
         executor.close_connection()
         executor.drop_database()
-        print('database droped.')
+        print('database dropped.')
 
 def clear_cache(ask, model_backup_directory):
     if ask == 'y':
@@ -194,7 +254,7 @@ def clear_cache(ask, model_backup_directory):
             shutil.rmtree(model_backup_directory)
         print('Cache removed.')
 
-def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_package="models"):    
+def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_package="models", description=""):    
     #check if database is created
       #creates the database if not created
     #check if the cache file exists
@@ -221,7 +281,7 @@ def manage_db(clear_cache_param='', ask_question='y', base_dir="", models_packag
         clear_cache(False, MODEL_BACKUP)
         drop_database(ask_question)
 
-    create_database(MODEL_DIR, MODEL_BACKUP, models_package)
+    create_database(MODEL_DIR, models_package, description)
 
 
 

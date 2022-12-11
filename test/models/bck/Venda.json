@@ -1,1 +1,0 @@
-{"table_name": "Venda", "primary_key": {"name": "PK_Venda", "fields": ["id"]}, "index": {}, "foreign_key": {"FK_Ven_Pro_Produto_id": {"reference": ""}}, "fields": [{"name": "id", "type": "IntegerPrimaryKey"}, {"name": "Produto_id", "type": "IntegerField"}, {"name": "quantidade", "type": "IntegerField"}], "check_constraints": {}}
