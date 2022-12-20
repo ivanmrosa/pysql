@@ -1112,6 +1112,146 @@ class TestFirstMigration(unittest.TestCase):
         data = select(Venda).values()
         self.assertGreater(len(select(PySQLStructure).values()), 2)
         os.rename(bck_path, bck_path_renamed)
+
+class TestGroupingFilters(unittest.TestCase):
+    def setUp(self) -> None:    
+        recreate_db()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
         
+        Produto.clear()
+        Produto.nome.value = ' Limpador de parabrisa '
+        Produto.categoria.value = 'ZZZZ'
+        Produto.valor_unitario.value = 0
+        insert(Produto).run()
+
+    def test_filter_sum_equals(self):
+        categories = select(Produto).filter_by_grouping(
+            oequ(fsum(Produto.valor_unitario), 550.49)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
+    def test_filter_max_equals(self):
+        categories = select(Produto).filter_by_grouping(
+            oequ(fmax(Produto.valor_unitario), 350.50)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
+
+    def test_filter_min_equals(self):
+        categories = select(Produto).filter_by_grouping(
+            oequ(fmin(Produto.valor_unitario), 540)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+
+    def test_filter_avg_equals(self):
+        categories = select(Produto).filter_by_grouping(
+            oequ(favg(Produto.valor_unitario), 745)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+    
+    def test_filter_sum_different(self):
+        categories = select(Produto).\
+        filter(odif(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fsum(Produto.valor_unitario), 550.49)            
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+    def test_filter_max_different(self):
+        categories = select(Produto).\
+        filter(odif(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fmax(Produto.valor_unitario), 350.50)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+
+    def test_filter_min_different(self):
+        categories = select(Produto).\
+        filter(odif(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fmin(Produto.valor_unitario), 540)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
+
+    def test_filter_avg_different(self):
+        categories = select(Produto).\
+        filter(odif(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(favg(Produto.valor_unitario), 745)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
+    def test_filter_sum_in(self):
+        categories = select(Produto).\
+        filter(onin(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fsum(Produto.valor_unitario), 550.49)            
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+    def test_filter_max_in(self):
+        categories = select(Produto).\
+        filter(onin(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fmax(Produto.valor_unitario), 350.50)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "RODA")
+
+
+    def test_filter_min_in(self):
+        categories = select(Produto).\
+        filter(onin(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            odif(fmin(Produto.valor_unitario), 540)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
+
+    def test_filter_avg_in(self):
+        categories = select(Produto).\
+        filter(onin(Produto.nome, ' Limpador de parabrisa ')).\
+        filter_by_grouping(
+            onin(favg(Produto.valor_unitario), 745)
+        ).values(Produto.categoria)
+
+        self.assertEqual(categories[0]["categoria"], "PNEU")
+
 if __name__ == '__main__':
     unittest.main()

@@ -24,6 +24,7 @@ class GenericBaseDmlScripts(DmlBase):
         self.script_fields = ''
         self.script_from = ''
         self.script_where = ''
+        self.script_having = ''
                 
     def add_operation(self, type, table):
         self.list_operations.append({"type": type, "table" : table})
@@ -52,10 +53,10 @@ class GenericBaseDmlScripts(DmlBase):
         self.add_operation('JOIN', table)
    
     
-    def join(self, table, table_to_relate=None, tuple_fields_comparations = ()):        
+    def join(self, table, table_to_relate=None, tuple_fields_comparisons = ()):        
         old_from_script = self.script_from
         self.add_base_join(table)
-        if len(tuple_fields_comparations) == 0:
+        if len(tuple_fields_comparisons) == 0:
             
             if len(self.list_operations) > 0:                
                 
@@ -106,7 +107,8 @@ class GenericBaseDmlScripts(DmlBase):
         return self
     
     def filter(self, *operators):
-        
+        if self.script_having:
+            raise Exception('The filter_by_grouping function should never be used before a filter function.')
         if not self.script_where:
             self.script_where += ' WHERE '
         else:
@@ -129,6 +131,34 @@ class GenericBaseDmlScripts(DmlBase):
         self.script_where += '(' + temporary_script + ')'
 
         return self
+    
+    def filter_by_grouping(self, *operators):
+        if not self.script_having:
+            self.script_having += ' HAVING '
+        else:
+            self.script_having += ' AND '
+        
+        temporary_script = ''
+
+        for operator in operators:
+            if len(operator.get_fields_not_in_group_function()) > 0:
+                raise Exception("Using filters without a group function is not allowed in filter_by_grouping. Use the filter function instead.")
+            self.aggregated_fields = self.aggregated_fields + operator.get_fields_in_group_function()  
+
+            if operator.get_operator() == 'OR':
+                if temporary_script: 
+                    temporary_script += ' OR ' + operator.get_sql_text(value_as_parameter=True, list_of_parameters=self.list_params)
+                else:
+                    temporary_script = operator.get_sql_text(value_as_parameter=True, list_of_parameters=self.list_params)    
+            else:                
+                if temporary_script: 
+                    temporary_script += ' AND ' + operator.get_sql_text(value_as_parameter=True, list_of_parameters=self.list_params)
+                else:
+                    temporary_script += operator.get_sql_text(value_as_parameter=True, list_of_parameters=self.list_params)
+                    
+        self.script_having += '(' + temporary_script + ')'
+        return self
+
 class GenericBaseDmlSelect(GenericBaseDmlScripts):
     def __init__(self, script_executor_object):
         super(GenericBaseDmlSelect, self).__init__(script_executor_object)
@@ -212,7 +242,8 @@ class GenericBaseDmlSelect(GenericBaseDmlScripts):
 
     def get_sql_and_fields_names(self, *fields):                
         fields_names, str_fields = self.get_fields_names_and_script(*fields)
-        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where + self.get_script_group_by() + self.script_order_by + \
+        script = self.script_fields + ' ' + str_fields + ' ' +  self.script_from.strip() + self.script_where + self.get_script_group_by() + \
+            self.script_having + self.script_order_by + \
             self.sql_script_pagination
         return script.strip(), fields_names
     

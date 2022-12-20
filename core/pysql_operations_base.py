@@ -9,7 +9,7 @@ class GenricBaseOperator(object):
 
     def get_value_or_field_name(self, value_or_field, quoted=False, value_as_parameter=False, list_of_parameters=[]):
         if FieldTools.is_db_field(value_or_field):
-            return value_or_field.get_sql_for_field(use_alias=False) #value_or_field.get_owner().get_alias() + '.' + value_or_field.get_db_name()
+            return value_or_field.get_sql_for_field(use_alias=False)
         else:
             if value_as_parameter:
                 list_of_parameters.append(value_or_field)
@@ -19,6 +19,7 @@ class GenricBaseOperator(object):
                     return "'" + value_or_field + "'"
                 else:
                     return value_or_field
+    
 
 
 class GenricOequ(PySqlOperatorsInterface, GenricBaseOperator):
@@ -35,7 +36,22 @@ class GenricOequ(PySqlOperatorsInterface, GenricBaseOperator):
                 self.value1, True, value_as_parameter, list_of_parameters),
             operator=self.get_operator(),
             field_or_val2=self.get_value_or_field_name(self.value2, True, value_as_parameter, list_of_parameters))
-
+    
+    def get_fields_in_group_function(self):
+        result = []
+        if FieldTools.is_field_and_used_in_aggregation_function(self.value1):
+            result.append(self.value1)
+        if FieldTools.is_field_and_used_in_aggregation_function(self.value2):
+            result.append(self.value2)
+        return result
+    
+    def get_fields_not_in_group_function(self):
+        result = []
+        if FieldTools.is_field_and_not_used_in_aggregation_function(self.value1):
+            result.append(self.value1)
+        if FieldTools.is_field_and_not_used_in_aggregation_function(self.value2):
+            result.append(self.value2)
+        return result
 
 class GenricOdif(GenricOequ):
     def get_operator(self):
@@ -52,6 +68,18 @@ class GenericOnull(PySqlOperatorsInterface, GenricBaseOperator):
     def get_sql_text(self, value_as_parameter=False, list_of_parameters=[]):
         return '({field} {operator})'.format(field=self.get_value_or_field_name(self.value, True, value_as_parameter, list_of_parameters), 
             operator=self.get_operator())
+
+    def get_fields_in_group_function(self):
+        result = []
+        if FieldTools.is_field_and_used_in_aggregation_function(self.value):
+            result.append(self.value)
+        return result
+    
+    def get_fields_not_in_group_function(self):
+        result = []
+        if FieldTools.is_field_and_not_used_in_aggregation_function(self.value):
+            result.append(self.value)
+        return result
 
 class GenericOnnull(GenericOnull):
     def get_operator(self):
@@ -80,6 +108,18 @@ class GenericOor(PySqlOperatorsInterface, GenricBaseOperator):
 
         return sql
 
+
+    def get_fields_in_group_function(self):
+        result = []
+        for condition in self.list_of_comparations:
+            result = result + condition.get_fields_in_group_function()
+        return result
+
+    def get_fields_not_in_group_function(self):
+        result = []
+        for condition in self.list_of_comparations:
+            result = result + condition.get_fields_not_in_group_function()
+        return result
 
 class GenericOin(PySqlOperatorsInterface, GenricBaseOperator):
     def __init__(self, *list_of_comparations):
@@ -116,7 +156,11 @@ class GenericOin(PySqlOperatorsInterface, GenricBaseOperator):
 
         return sql
 
-
+    def get_fields_in_group_function(self):        
+        return [self.field_to_filter] if self.field_to_filter.is_used_in_aggregated_function() else []
+    
+    def get_fields_not_in_group_function(self):
+        return [self.field_to_filter] if not self.field_to_filter.is_used_in_aggregated_function() else []
 class GenericOnin(GenericOin):
 
     def get_operator(self):
@@ -160,6 +204,11 @@ class GenericOex(PySqlOperatorsInterface, GenricBaseOperator):
         return ' {operator} ({sql_from_exists_parameter})'.format(operator=self.get_operator(), 
             sql_from_exists_parameter=self.filter_for_exists_sql.get_sql())
 
+    def get_fields_in_group_function(self):
+        return []
+    
+    def get_fields_not_in_group_function(self):
+        return []
 class GenericOnex(GenericOex):
     def get_operator(self):
         return 'NOT EXISTS'
