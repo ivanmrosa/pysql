@@ -129,3 +129,4 @@ dmypy.json
 .vscode/launch.json
 pysqltest.db
 pysqltest
+pysql_config.json
