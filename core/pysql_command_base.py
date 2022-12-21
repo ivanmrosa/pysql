@@ -31,6 +31,9 @@ class GenericBaseDmlScripts(DmlBase):
         
     def add_base_join(self, table):
         self.script_from += ' JOIN {table} {alias} ON '.format(table=table.get_db_name(), alias=table.get_alias())
+
+    def add_base_outer_join(self, table):
+        self.script_from += ' LEFT JOIN {table} {alias} ON '.format(table=table.get_db_name(), alias=table.get_alias())
             
     def add_script_used_for_join_filter(self, script, first_filter):
         self.script_from += script
@@ -52,7 +55,10 @@ class GenericBaseDmlScripts(DmlBase):
         self.script_from = self.script_from.strip()
         self.add_operation('JOIN', table)
    
-    
+    def end_operation_add_outer_join(self, table):
+        self.script_from = self.script_from.strip()
+        self.add_operation('LEFT JOIN', table)
+
     def join(self, table, table_to_relate=None, tuple_fields_comparisons = ()):        
         old_from_script = self.script_from
         self.add_base_join(table)
@@ -82,16 +88,19 @@ class GenericBaseDmlScripts(DmlBase):
                     self.script_from = old_from_script
                     fk_fields = table.get_many_to_many_fields()
                     for fk_field in fk_fields:
-                        if issubclass(fk_field.get_related_to_class(), table):
+                        if issubclass(fk_field.get_related_to_class(), table) or issubclass(fk_field.get_related_to_class(), prior_table):
                             #self.join(table, fk_field.get_middle_class())
-                            self.join(fk_field.get_middle_class())                            
-                            self.join(fk_field.get_related_to_class())
+                            self.join(fk_field.get_middle_class())  
+                            if prior_table is not fk_field.get_related_to_class():                        
+                                self.join(fk_field.get_related_to_class())
+                            else:
+                                self.join(table)
                             count += 1
                     
                     if count == 0:
                         fk_fields = prior_table.get_many_to_many_fields()
                         for fk_field in fk_fields:
-                            if issubclass(fk_field.get_related_to_class(), table):
+                            if issubclass(fk_field.get_related_to_class(), table) or issubclass(fk_field.get_related_to_class(), prior_table):
                                 self.join(fk_field.get_middle_class())                            
                                 self.join(fk_field.get_related_to_class())
 
@@ -106,6 +115,62 @@ class GenericBaseDmlScripts(DmlBase):
 
         return self
     
+    def outer_join(self, table, table_to_relate=None, tuple_fields_comparisons = ()):        
+        old_from_script = self.script_from
+        self.add_base_outer_join(table)
+        if len(tuple_fields_comparisons) == 0:
+            
+            if len(self.list_operations) > 0:                
+                
+                prior_table = table_to_relate if table_to_relate else self.list_operations[-1:][0]["table"]
+                fk_fields = table.get_fk_fields()
+
+                count = 0
+                for fk_field in fk_fields:
+                    if issubclass(fk_field.get_related_to_class(), prior_table):
+                        self.add_base_filter_join_using_fk(table, prior_table, fk_field, 
+                            fk_field.get_related_to_class().get_pk_fields()[0], count==0)
+                        count += 1
+                
+                if count == 0:
+                    fk_fields = prior_table.get_fk_fields()
+                    for fk_field in fk_fields:
+                        if issubclass(fk_field.get_related_to_class(), table):
+                            self.add_base_filter_join_using_fk(table, prior_table, 
+                                fk_field.get_related_to_class().get_pk_fields()[0], fk_field, count==0)
+                            count += 1
+
+                if count == 0:
+                    self.script_from = old_from_script
+                    fk_fields = table.get_many_to_many_fields()
+                    for fk_field in fk_fields:
+                        if issubclass(fk_field.get_related_to_class(), table) or issubclass(fk_field.get_related_to_class(), prior_table):
+                            #self.join(table, fk_field.get_middle_class())
+                            self.outer_join(fk_field.get_middle_class())  
+                            if prior_table is not fk_field.get_related_to_class():                        
+                                self.outer_join(fk_field.get_related_to_class())
+                            else:
+                                self.outer_join(table)
+                            count += 1
+                    
+                    if count == 0:
+                        fk_fields = prior_table.get_many_to_many_fields()
+                        for fk_field in fk_fields:
+                            if issubclass(fk_field.get_related_to_class(), table) or issubclass(fk_field.get_related_to_class(), prior_table):
+                                self.outer_join(fk_field.get_middle_class())                            
+                                self.outer_join(fk_field.get_related_to_class())
+
+                                count += 1
+                              
+            else:
+                raise Exception('Join must be preceded for an operator update or select')
+        else:
+            raise NotImplementedError
+        
+        self.end_operation_add_outer_join(table)
+
+        return self
+
     def filter(self, *operators):
         if self.script_having:
             raise Exception('The filter_by_grouping function should never be used before a filter function.')

@@ -1,4 +1,5 @@
-import unittest, os
+import os
+import unittest 
 import datetime
 import asyncio
 
@@ -242,6 +243,12 @@ class TestExecutionOnDataBase(unittest.TestCase):
         self.assertEqual(estados[0][0], 'Minas Gerais')
         self.assertEqual(estados[0][1], 'Brasil')
     
+    def test_sql_with_simple_join_2(self):
+
+        estados = select(Pais).join(Estado).filter(oequ(Estado.nome, 'Minas Gerais')).values(Estado.nome, Pais.nome)
+        self.assertEqual(estados[0][0], 'Minas Gerais')
+        self.assertEqual(estados[0][1], 'Brasil')
+
     def test_sql_with_simple_filter(self):
 
         estados = select(Estado).join(Pais).filter(oequ(Pais.nome, 'Brasil'), 
@@ -491,7 +498,7 @@ class TestManyToManyField(unittest.TestCase):
         VendaMultipla.produtos.add(get_id_produto('Pneu aro 13'))
         insert(VendaMultipla).run()
 
-        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)
+        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome, VendaMultipla.id)
         
         self.assertEqual(len(vendas_produto), 2)
 
@@ -500,7 +507,7 @@ class TestManyToManyField(unittest.TestCase):
         VendaMultipla.produtos.add(get_id_produto(' Limpador de parabrisa '))
         insert(VendaMultipla.produtos).run()
 
-        vendas_produto = select(VendaMultipla).join(Produto).values(Produto.nome)        
+        vendas_produto = select(Produto).join(VendaMultipla).values(Produto.nome, VendaMultipla.id)        
         self.assertEqual(len(vendas_produto), 3)
 
     def test_delete(self):
@@ -1252,6 +1259,28 @@ class TestGroupingFilters(unittest.TestCase):
         ).values(Produto.categoria)
 
         self.assertEqual(categories[0]["categoria"], "PNEU")
+    
+class TestOuterJoin(unittest.TestCase):
+    def setUp(self) -> None:
+        recreate_db()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+    def test_outer_join(self):
+        data = select(Produto).\
+                outer_join(Venda).\
+                values(Produto.nome, Venda.id)
+        self.assertEqual(data[0]['nome'], 'Pneu aro 15')
+
+    def test_outer_join_many_to_many(self):
+        # VendaMultipla
+        data = select(Produto).\
+                outer_join(VendaMultipla).\
+                values(Produto.nome, VendaMultipla.id)
+        self.assertEqual(data[0]['nome'], 'Pneu aro 15')
 
 if __name__ == '__main__':
     unittest.main()
