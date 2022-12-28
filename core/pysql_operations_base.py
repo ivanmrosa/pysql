@@ -53,6 +53,15 @@ class GenricOequ(PySqlOperatorsInterface, GenricBaseOperator):
             result.append(self.value2)
         return result
 
+class GenericObet(GenricOequ):
+    def get_operator(self):
+        return '>='
+
+class GenericOlet(GenricOequ):
+    def get_operator(self):
+        return '<='
+
+
 class GenricOdif(GenricOequ):
     def get_operator(self):
         return '<>'
@@ -220,6 +229,13 @@ class GenericOequPostgre(GenricOequ):
     pass
 
 
+class GenericObetPostgre(GenericObet):
+    pass
+
+
+class GenericOletPostgre(GenericOlet):
+    pass
+
 class GenericOdifPostgre(GenricOdif):
     pass
 
@@ -271,6 +287,12 @@ class GenricOdifMySql(GenricOdif):
     pass
 
 
+class GenericObetMysql(GenericObet):
+    pass
+
+class GenericOletMysql(GenericOlet):
+    pass
+
 class GenericOnullMySql(GenericOnull):
     pass
 
@@ -313,6 +335,12 @@ class GenericOnexMysql(GenericOnex):
 class GenricOequOracle(GenricOequ):
     pass
 
+
+class GenericObetOracle(GenericObet):
+    pass
+
+class GenericOletOracle(GenericOlet):
+    pass
 
 class GenricOdifOracle(GenricOdif):
     pass
@@ -361,6 +389,11 @@ class GenericOnexOracle(GenericOnex):
 class GenericBaseOperatorSqlServer(GenricBaseOperator):
     pass
 
+class GenericObetSqlServer(GenericObet):
+    pass
+
+class GenericOletSqlServer(GenericOlet):
+    pass
 
 class GenericOequSqlServer(GenricOequ):
     pass
@@ -418,7 +451,13 @@ class GenricBaseOperatorSqlite(GenricBaseOperator):
 class GenericOequSqlite(GenricBaseOperatorSqlite, GenricOequ):
     pass
 
-      
+
+class GenericObetSqlite(GenricBaseOperatorSqlite, GenericObet):
+    pass
+
+class GenericOletSqlite(GenricBaseOperatorSqlite, GenericOlet):
+    pass
+
 class GenericOdifSqlite(GenricBaseOperatorSqlite, GenricOdif):
     pass
 

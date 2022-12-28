@@ -42,6 +42,10 @@ class PySqlClassGenerator(object):
         cls.operator_exists = config['SQL_OPERATORS_CLASSES']['exists']
         cls.operator_not_exists = config['SQL_OPERATORS_CLASSES']['not_exists']
 
+        cls.operator_bigger_or_equal_than = config['SQL_OPERATORS_CLASSES']['bigger_or_equal_than']
+        cls.operator_less_or_equal_than = config['SQL_OPERATORS_CLASSES']['less_or_equal_than']
+
+
         cls.sql_command_class = config['SQL_COMMAND_CLASSES']['select_script']
         cls.open_sql_command_class = config['SQL_COMMAND_CLASSES']['open_select_script']
         cls.insert_command_class = config['SQL_COMMAND_CLASSES']['insert_script']
@@ -49,6 +53,7 @@ class PySqlClassGenerator(object):
         cls.delete_command_class = config['SQL_COMMAND_CLASSES']['delete_script']
         cls.script_executor = config['SCRIPT_EXECUTOR_CLASS']
         cls.sql_functions_config_class = config['SQL_FUNCTIONS_CLASS']
+
         
         
     @classmethod
@@ -72,7 +77,9 @@ class PySqlClassGenerator(object):
             'less_than': cls.operator_less_than,
             'bigger_than': cls.operator_bigger_than,
             'exists': cls.operator_exists,
-            'not_exists': cls.operator_not_exists
+            'not_exists': cls.operator_not_exists,
+            'bigger_or_equal_than' : cls.operator_bigger_or_equal_than,
+            'less_or_equal_than' : cls.operator_less_or_equal_than
         }
     
     @classmethod

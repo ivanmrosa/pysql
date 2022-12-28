@@ -30,7 +30,8 @@ from . pysql_operations_base import GenericOequPostgre, GenericOdifPostgre, Gene
     GenericOninPostgre, GenericOlikePostgre, GenericOnlikePostgre, GenericOnnullPostgre, GenericObtPostgre, GenericOltPostgre, \
     GenericOexPostgre, GenericOnexPostgre,  GenericOequSqlite, GenericOdifSqlite, GenericOnullSqlite, GenericOorSqlite, GenericOinSqlite, \
     GenericOninSqlite, GenericOlikeSqlite, GenericOnlikeSqlite, GenericOnnullSqlite, GenericObtSqlite, GenericOltSqlite, \
-    GenericOexSqlite, GenericOnexSqlite
+    GenericOexSqlite, GenericOnexSqlite, GenericOletSqlite, GenericObetSqlite, GenericOletMysql, GenericObetMysql, \
+    GenericOletOracle, GenericObetOracle, GenericObetPostgre, GenericOletPostgre, GenericObetSqlServer, GenericOletSqlServer
 
 from . pysql_command_base import GenericBaseDmlSelectPostgre, GenericBaseDmlSelectMySql,  GenericBaseDmlSelectOracle, \
     GenericBaseDmlSelectSqlServer,  GenericBaseDmlSelectSqlite,  GenericBaseDmlInsertPostgre, GenericBaseDmlUpdatePostgre, GenericBaseDmlUpdateMySql, \
@@ -67,7 +68,9 @@ DRIVER_CLASSES_CONFIG = {
            'less_than': GenericOltPostgre,
            'bigger_than': GenericObtPostgre,
            'exists': GenericOexPostgre,
-           'not_exists': GenericOnexPostgre       
+           'not_exists': GenericOnexPostgre,
+           'bigger_or_equal_than': GenericObetPostgre,
+           'less_or_equal_than': GenericOletPostgre       
        },
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectPostgre,
@@ -111,7 +114,9 @@ DRIVER_CLASSES_CONFIG = {
            'less_than': GenericOltSqlite,
            'bigger_than': GenericObtSqlite,
            'exists': GenericOexSqlite,
-           'not_exists': GenericOnexSqlite       
+           'not_exists': GenericOnexSqlite,
+           'bigger_or_equal_than': GenericObetSqlite,
+           'less_or_equal_than': GenericOletSqlite                        
        },
        'SQL_COMMAND_CLASSES': {
           'select_script': GenericBaseDmlSelectSqlite,

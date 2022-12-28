@@ -227,8 +227,48 @@ class TestExecutionOnDataBase(unittest.TestCase):
         Cidade.nome.value = 'Belo Horizonte'
         Cidade.estado.value = select(Estado).filter(oequ(Estado.sigla, 'MG')).values(Estado.id).get_first()["id"]
         insert(Cidade).run() 
+
+        Produto.clear()
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 15'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 350.50
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Pneu aro 13'
+        Produto.categoria.value = 'PNEU'
+        Produto.valor_unitario.value = 199.99
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 13'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 540
+        insert(Produto).run()
+
+        Produto.clear()
+        Produto.nome.value = 'Roda de aço aro 15'
+        Produto.categoria.value = 'RODA'
+        Produto.valor_unitario.value = 950
+        insert(Produto).run()
+        
     
-       
+    # def test_between_clause(self):
+    #     data = select(Produto).filter(obtw(Produto.valor_unitario, 300, 351)).values()
+    #     self.assertEqual(len(data), 1)
+    #     self.assertEqual(data["nome"], 'Pneu aro 15')
+
+    def test_bigger_or_equal_clause(self):
+        data = select(Produto).filter(obet(Produto.valor_unitario, 950)).values()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["nome"], 'Roda de aço aro 15')
+
+    def test_less_or_equal_clause(self):
+        data = select(Produto).filter(olet(Produto.valor_unitario, 199.99)).values()
+        self.assertEqual(len(data), 1)
+        self.assertEqual(data[0]["nome"], 'Pneu aro 13')
+
     def test_simple_sql(self):
         paises = select(Pais).values()
         self.assertEqual(paises[0][1], 'Brasil')
