@@ -38,6 +38,14 @@ class Field(PySqlFieldInterface):
         self.ordering_by_desc = False
 
         self._property_name = ''
+        self.__description = db_name
+    
+    def setDescription(self, description):
+        self.__description = description
+        return self
+   
+    def __repr__(self) -> str:
+        return self.__description
 
     @classmethod
     def get_class_name(cls):
